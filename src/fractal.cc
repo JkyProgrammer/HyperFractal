@@ -1,76 +1,76 @@
-#include <complex>
+#include "fractal.h"
 
-using namespace std;
+double comp_modulus (complex<double> comp) {
+    return pow(pow(comp.real(),2.0) + pow(comp.imag(),2.0), 1/2);
+}
 
-class equation;
+value::value (complex<double> c) {
+    cVal = c;
+    type = 0;
+}
 
-class value {
-public:
-    complex<double> cVal;
-    equation *eVal;
-    bool lVal; // true - z, false - c
-    int type; // 0 - Constant, 1 - letter substitution, 2 - sub-equation
+value::value (double c) {
+    cVal = complex<double> (c, 0);
+    type = 0;
+}
 
-    value (complex<double> c) {
-        cVal = c;
-        type = 0;
+value::value (bool l) {
+    lVal = l;
+    type = 1;
+}
+
+value::value (equation *e) {
+    eVal = e;
+    type = 2;
+}
+
+value::value () {
+
+}
+
+complex<double> equation::compute (complex<double> z, complex<double> c) {
+    complex<double> v1;
+    complex<double> v2;
+    if (a.type == 0) v1 = a.cVal;
+    else if (a.type == 1) v1 = a.lVal ? z : c;
+    else v1 = a.eVal->compute(z, c);
+
+    if (b.type == 0) v2 = b.cVal;
+    else if (b.type == 1) v2 = b.lVal ? z : c;
+    else v2 = b.eVal->compute(z, c);
+
+    complex<double> rv = 0;
+    switch (operation) {
+    case 0:
+        rv = v1+v2;
+        break;
+    case 1:
+        rv = v1-v2;
+        break;
+    case 2:
+        rv = v1*v2;
+        break;
+    case 3:
+        rv = v1/v2;
+        break;
+    case 4:
+        rv = pow(v1, v2);
     }
+    return rv;
+}
 
-    value (bool l) {
-        lVal = l;
-        type = 1;
+int equation::evaluate (complex<double> c, int limit, float threshold) {
+    complex<double> last = compute (c, c);
+    int depth = 0;
+    while (comp_modulus(last) < threshold && depth < limit) {
+        depth++;
+        last = compute (last, c);
     }
+    return depth;
+}
 
-    value (equation *e) {
-        eVal = e;
-        type = 2;
-    }
-    
-    value () {
-
-    }
-};
-
-class equation {
-public:
-    value a;
-    value b;
-    int operation;
-
-    complex<double> compute (complex<double> z, complex<double> c) {
-        complex<double> v1;
-        complex<double> v2;
-        if (a.type == 0) v1 = a.cVal;
-        else if (a.type == 1) v1 = a.lVal ? z : c;
-        else v1 = a.eVal->compute(z, c);
-
-        if (b.type == 0) v2 = b.cVal;
-        else if (b.type == 1) v1 = b.lVal ? z : c;
-        else v2 = b.eVal->compute(z, c);
-
-        complex<double> rv = 0;
-        switch (operation) {
-        case 0:
-            rv = v1+v2;
-            break;
-        case 1:
-            rv = v1-v2;
-            break;
-        case 2:
-            rv = v1*v2;
-            break;
-        case 3:
-            rv = v1/v2;
-            break;
-        case 4:
-            rv = pow(v1, v2);
-        }
-        return rv;
-    }
-
-    equation (value aVal, value bVal, int op) {
-        operation = op;
-        a = aVal;
-        b = bVal;
-    }
-};
+equation::equation (value aVal, value bVal, int op) {
+    operation = op;
+    a = aVal;
+    b = bVal;
+}
