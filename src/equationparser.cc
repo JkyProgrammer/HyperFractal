@@ -1,6 +1,6 @@
 #include "equationparser.h"
 
-equation* makeEquation (string seq) {
+equation* extract_equation (string seq) {
     // TODO
     return NULL;
 }

@@ -8,7 +8,7 @@ build:
 	@echo Done.
 
 run: $(build)
-	@./HyperFractal $(arg)
+	@./HyperFractal 1024 0.0 0.0 1.0 z^2+c 4
 
 clean:
 	@rm HyperFractal

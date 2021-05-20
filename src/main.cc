@@ -1,4 +1,6 @@
 #include <iostream>
+#include <vector>
+#include <thread>
 #include "fractal.h"
 #include "equationparser.h"
 
@@ -6,14 +8,18 @@ using namespace std;
 
 int fail () {
     cout << "Provide all the correct arguments please:" << endl;
-    cout << "int resolution, double offset_x, double offset_y, double zoom, string equation" << endl;
+    cout << "int resolution, double offset_x, double offset_y, double zoom, string equation, int worker_threads" << endl;
     cout << "Ensure equation has no spaces" << endl;  
     return 1;
 }
 
-// Arguments: int resolution, double offset_x, double offset_y, double zoom, string equation
+void thread_main (equation *e) {
+    // TODO: Main execution
+}
+
+// Arguments: int resolution, double offset_x, double offset_y, double zoom, string equation, int worker_threads
 int main (int argc, char *argv[]) {
-    if (argc != 6) {
+    if (argc != 7) {
         cout << argc << endl;
         return fail ();
     }
@@ -23,12 +29,17 @@ int main (int argc, char *argv[]) {
     double offset_y = stod (argv[3]);
     double zoom = stod (argv[4]);
     string *eq = new string (argv[5]);
+    int worker_threads = stoi (argv[6]);
 
-    cout << *eq << endl;
+    cout << "Parsing equation: \"" << *eq + "\"" << endl;
+    equation *main_equation = extract_equation (*eq);
 
-    equation *e1 = new equation (value(true), value (2.0), 4);
-    equation *e = new equation (value(e1), value(false), 0);
-    cout << e->evaluate(complex<double>(0), 100) << endl;
-    cout << "Hello, World" << endl;
+    vector<thread> thread_pool;
+
+    for (int i = 0; i < worker_threads; i++) {
+        thread_pool.push_back (thread (thread_main, ref(main_equation)));
+    }
+
+    for (auto& th : thread_pool) th.join();
     return 0;
 }

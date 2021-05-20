@@ -3,6 +3,6 @@
 #ifndef EQUATIONPARSER
 #define EQUATIONPARSER
 
-equation* makeEquation (string seq);
+equation* extract_equation (string seq);
 
 #endif
