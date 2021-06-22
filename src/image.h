@@ -9,4 +9,5 @@ public:
     void set (int, int, uint8_t, uint8_t, uint8_t);
     image (int, int);
     void write (const char* path);
+    ~image ();
 };

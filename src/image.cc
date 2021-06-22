@@ -19,3 +19,7 @@ image::image(int, int) {
 void image::write (const char* path) {
     stbi_write_png(path, width, height, 3, rgb_image, width*3);
 }
+
+image::~image () {
+    free (rgb_image);
+}
