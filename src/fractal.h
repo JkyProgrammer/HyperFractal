@@ -37,6 +37,9 @@ public:
     int evaluate (complex<double> c, int limit, float threshold=1.0);
 
     equation (value aVal, value bVal, int op);
+    equation ();
 };
+
+std::ostream & operator<<(std::ostream & Str, equation const & v);
 
 #endif

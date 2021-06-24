@@ -74,3 +74,18 @@ equation::equation (value aVal, value bVal, int op) {
     a = aVal;
     b = bVal;
 }
+
+equation::equation () {}
+
+#define OPS "+-*/^"
+
+std::ostream & operator<<(std::ostream & Str, equation const & v) { 
+  if (v.a.type == 0) Str << v.a.cVal;
+  if (v.a.type == 1) Str << (v.a.lVal ? "Z" : "C");
+  if (v.a.type == 2) Str << "(" << *v.a.eVal << ")";
+  Str << " " << OPS[v.operation] << " ";
+  if (v.b.type == 0) Str << v.b.cVal;
+  if (v.b.type == 1) Str << (v.b.lVal ? "Z" : "C");
+  if (v.b.type == 2) Str << "(" << *v.b.eVal << ")";
+  return Str;
+}

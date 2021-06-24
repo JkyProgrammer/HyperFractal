@@ -10,30 +10,37 @@ class hfractal_main {
     double offset_x;
     double offset_y;
     double zoom;
+    int block_size;
     string *eq;
     int worker_threads;
-    image img = image(0,0);
+    int eval_limit;
+    image *img = new image(0,0);
     equation *main_equation;
     std::vector<std::thread*> thread_pool;
 
     int fail () {
         cout << "Provide all the correct arguments please:" << endl;
-        cout << "int resolution, double offset_x, double offset_y, double zoom, string equation, int worker_threads" << endl;
+        cout << "int resolution, double offset_x, double offset_y, double zoom, string equation, int worker_threads, int eval_limit" << endl;
         cout << "Ensure equation has no spaces" << endl;  
         return 1;
     }
 
     void thread_main (int i) {
-        int y = 0;
-        int x = 0;
-        
-
-        // TODO: Main execution
+        // Range of execution is between ((resolution*resolution)/worker_threads)*i and ((resolution*resolution)/worker_threads)*(i+1)
+        for (int k = block_size*i; k < block_size*(i+1); k++) {
+            int x = k%resolution;
+            int y = k/resolution;
+            complex<double> c = complex<double> ((x-offset_x)/zoom, (y-offset_y)/zoom); // TODO: Factor in zoom and offset
+            int res = main_equation->evaluate (c, eval_limit);
+            cout << "fuck" << endl;
+            img->set (x, y, res, res, res);
+            cout << "fuck2" << endl;
+        }
     }
 public:
-    // Arguments: int resolution, double offset_x, double offset_y, double zoom, string equation, int worker_threads
+    // Arguments: int resolution, double offset_x, double offset_y, double zoom, string equation, int worker_threads, int eval_limit
     int main (int argc, char *argv[]) {
-        if (argc != 7) {
+        if (argc != 8) {
             cout << argc << endl;
             return fail ();
         }
@@ -44,7 +51,9 @@ public:
         zoom = stod (argv[4]);
         eq = new string (argv[5]);
         worker_threads = stoi (argv[6]);
-        img = image (resolution, resolution);
+        eval_limit = stoi (argv[7]);
+        img = new image (resolution, resolution);
+        block_size = (resolution*resolution)/worker_threads;
 
         cout << "Parsing equation: \"" << *eq + "\"" << endl;
         main_equation = extract_equation (*eq);
@@ -55,7 +64,7 @@ public:
         }
 
         for (auto th : thread_pool) th->join();
-        img.write("out.png");
+        img->write("out.png");
         return 0;
     }
 
