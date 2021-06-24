@@ -7,6 +7,26 @@
             "label": "Build and Run",
             "type": "shell",
             "command": "make clean \n make build \n make run"
+        },
+        {
+            "type": "cppbuild",
+            "label": "C/C++: clang build project",
+            "command": "/usr/bin/clang++",
+            "args": [
+                "-g",
+                "-std=c++11",
+                "${workspaceFolder}/src/*.cc",
+                "-o",
+                "${workspaceFolder}/HyperFractal"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
+            "detail": "compiler: /usr/bin/clang"
         }
     ]
 }

@@ -1,7 +1,8 @@
 #include "fractal.h"
+#include <iostream>
 
-double comp_modulus (complex<double> comp) {
-    return pow(pow(comp.real(),2.0) + pow(comp.imag(),2.0), 1/2);
+bool is_infinity (complex<double> comp) {
+    return pow(comp.real(),2.0) + pow(comp.imag(),2.0) > (double)2;
 }
 
 value::value (complex<double> c) {
@@ -58,11 +59,11 @@ complex<double> equation::compute (complex<double> z, complex<double> c) {
     }
     return rv;
 }
-
+using namespace std;
 int equation::evaluate (complex<double> c, int limit, float threshold) {
     complex<double> last = compute (c, c);
     int depth = 0;
-    while (comp_modulus(last) < threshold && depth < limit) {
+    while (!is_infinity(last) && (depth < limit)) {
         depth++;
         last = compute (last, c);
     }

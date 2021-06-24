@@ -7,7 +7,7 @@ using namespace std;
 
 class equation;
 
-double comp_modulus (complex<double> comp);
+bool is_infinity (complex<double> comp);
 
 class value {
 public:

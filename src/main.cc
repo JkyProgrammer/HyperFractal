@@ -5,12 +5,27 @@
 #include "equationparser.h"
 #include "image.h"
 
+#define TERMINAL_UPDATES
+
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+#endif
+
+void sleepcp(int milliseconds) {
+    #ifdef _WIN32
+        Sleep(milliseconds);
+    #else
+        usleep(milliseconds * 1000);
+    #endif
+}
+
 class hfractal_main {
     int resolution;
     double offset_x;
     double offset_y;
     double zoom;
-    int block_size;
     string *eq;
     int worker_threads;
     int eval_limit;
@@ -21,20 +36,25 @@ class hfractal_main {
     int fail () {
         cout << "Provide all the correct arguments please:" << endl;
         cout << "int resolution, double offset_x, double offset_y, double zoom, string equation, int worker_threads, int eval_limit" << endl;
-        cout << "Ensure equation has no spaces" << endl;  
         return 1;
     }
 
     void thread_main (int i) {
         // Range of execution is between ((resolution*resolution)/worker_threads)*i and ((resolution*resolution)/worker_threads)*(i+1)
-        for (int k = block_size*i; k < block_size*(i+1); k++) {
-            int x = k%resolution;
-            int y = k/resolution;
-            complex<double> c = complex<double> ((x-offset_x)/zoom, (y-offset_y)/zoom); // TODO: Factor in zoom and offset
-            int res = main_equation->evaluate (c, eval_limit);
-            cout << "fuck" << endl;
+        
+        double p = 2/(zoom*resolution);
+        double q = (1-offset_x)/zoom;
+        double r = (1+offset_y)/zoom;
+        int next = img->get_uncompleted();
+        while (next != -1) {
+            int x = next%resolution;
+            int y = next/resolution;
+            double a = (p*x) - q;
+            double b = r - (p*y);
+            complex<double> c = complex<double> (a,b);
+            int res = logf((float)(main_equation->evaluate (c, eval_limit))/(float)eval_limit)*255;
             img->set (x, y, res, res, res);
-            cout << "fuck2" << endl;
+            next = img->get_uncompleted();
         }
     }
 public:
@@ -53,18 +73,32 @@ public:
         worker_threads = stoi (argv[6]);
         eval_limit = stoi (argv[7]);
         img = new image (resolution, resolution);
-        block_size = (resolution*resolution)/worker_threads;
 
         cout << "Parsing equation: \"" << *eq + "\"" << endl;
         main_equation = extract_equation (*eq);
 
         for (int i = 0; i < worker_threads; i++) {
-            std::thread t(&hfractal_main::thread_main, this, i);
-            thread_pool.push_back (&t);
+            std::thread *t = new std::thread(&hfractal_main::thread_main, this, i);
+            thread_pool.push_back (t);
         }
 
+        while (true) {
+            #ifdef TERMINAL_UPDATES
+            float percent = ((float)(img->get_ind())/(float)(resolution*resolution))*100;
+            std::cout << "\r";
+            std::cout << "Working: ";
+            for (int k = 2; k <= 100; k+=2) { if (k <= percent) std::cout << "█"; else std::cout << "_"; }
+            std::cout << " | ";
+            std::cout << round(percent) << "%";
+            #endif
+            sleepcp (2);
+            if (img->is_done()) break;
+        }
+        std::cout << std::endl;
         for (auto th : thread_pool) th->join();
+        std::cout << "Writing... ";
         img->write("out.png");
+        std::cout << "Done." << endl;
         return 0;
     }
 
