@@ -4,7 +4,7 @@ CC       = g++
 CC_args  = -Wall -std=c++11
 
 build:
-	@$(CC) $(CC_args) $(cc_files) -o $(output)
+	@$(CC) $(CC_args) $(cc_files) lib/libraylib.a -o $(output)
 	@echo Done.
 
 run: $(build)
