@@ -4,7 +4,7 @@ ifeq ($(OS),Windows_NT)
 	@echo This Makefile is not configured for building on Windows
 else
 	CC       = g++
-	CC_args  = -Wall -std=c++11
+	CC_args  = -Wall -std=c++17
 	raylib_flags = -framework IOKit -framework Cocoa -framework OpenGL lib/libraylib.a
 endif
 

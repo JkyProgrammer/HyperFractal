@@ -1,40 +1,39 @@
 
 #include "../lib/raylib.h"
+#define RAYGUI_IMPLEMENTATION
+#define RAYGUI_SUPPORT_ICONS
+#include "../lib/raygui.h"
 #include "gui.h"
+#include <math.h>
+#include <algorithm>
+
+#define CONTROL_MIN_WIDTH 200
+#define WINDOW_INIT_WIDTH 800
+#define WINDOW_INIT_HEIGHT 450
 
 int gui_main () {
-    const int screenWidth = 800;
-    const int screenHeight = 450;
 
-    InitWindow(screenWidth, screenHeight, "HyperFractal Mathematical Visualiser");
+    int imageDimension = WINDOW_INIT_HEIGHT;
+    int controlPanelWidth = WINDOW_INIT_WIDTH - imageDimension;
 
-    SetTargetFPS(30);               // Set our game to run at 60 frames-per-second
-    //--------------------------------------------------------------------------------------
+    InitWindow(WINDOW_INIT_WIDTH, WINDOW_INIT_HEIGHT, "HyperFractal Mathematical Visualiser");
+    SetWindowState (FLAG_WINDOW_RESIZABLE);
+    SetWindowMinSize(256+CONTROL_MIN_WIDTH, 256);  
+    SetTargetFPS(30);
 
-    // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
-    {
-        // Update
-        //----------------------------------------------------------------------------------
-        // TODO: Update your variables here
-        //----------------------------------------------------------------------------------
+    bool exitWindow = false;
 
-        // Draw
-        //----------------------------------------------------------------------------------
+    while (!exitWindow && !WindowShouldClose()) {
+        imageDimension = std::min(GetScreenWidth()-CONTROL_MIN_WIDTH, GetScreenHeight());
+        controlPanelWidth = GetScreenWidth()-imageDimension;
         BeginDrawing();
-
-            ClearBackground(RAYWHITE);
-
-            DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
-
+        ClearBackground(RAYWHITE);
+        DrawRectangle (0,0,imageDimension,imageDimension, RED);
+        DrawText("TODO", 190, 200, 20, LIGHTGRAY);
+        exitWindow = GuiButton((Rectangle){(float)imageDimension, 0, (float)controlPanelWidth, 30}, "kill me");
         EndDrawing();
-        //----------------------------------------------------------------------------------
     }
 
-    // De-Initialization
-    //--------------------------------------------------------------------------------------
-    CloseWindow();        // Close window and OpenGL context
-    //--------------------------------------------------------------------------------------
-
+    CloseWindow();
     return 0;
 }
