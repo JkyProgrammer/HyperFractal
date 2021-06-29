@@ -1,18 +1,16 @@
 #include "image.h"
 #include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <ostream>
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
-
-void image::set(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
+void image::set(int x, int y, uint16_t p) {
     mut.lock();
     if (x >= width || x < 0) { mut.unlock(); return; }
     if (y >= height || y < 0) { mut.unlock(); return; }
-    int offset = ((y*width)+x)*3;
-    rgb_image[offset] = r;
-    rgb_image[offset+1] = g;
-    rgb_image[offset+2] = b;
-    completed[offset/3] = 2;
+    int offset = ((y*width)+x);
+    rgb_image[offset] = p;
+    completed[offset] = 2;
     c_ind++;
     mut.unlock();
 }
@@ -20,13 +18,33 @@ void image::set(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
 image::image(int w, int h) {
     width = w;
     height = h;
-    rgb_image = new uint8_t[width*height*3];
+    rgb_image = new uint16_t[width*height];
     completed = new uint8_t[width*height];
     c_ind = 0;
 }
 
 void image::write (const char* path) {
-    stbi_write_png(path, width, height, 3, rgb_image, width*3);
+    FILE *imgFile;
+    imgFile = fopen(path,"wb");
+
+    fprintf(imgFile,"P5\n");
+    fprintf(imgFile,"%d %d\n",width,height);
+    fprintf(imgFile,"255\n");
+
+    for(int y = 0; y < height; y++){
+        for(int x = 0; x < width; x++){
+            uint16_t p = rgb_image[(y*width)+x];
+            //fprintf(imgFile, (char*)&x);
+            //std::cout << p << std::endl;
+            //std::cout << (p & 0b11111111) << std::endl;
+            //std::cout << (p >> 8) << std::endl << std::endl;
+            fputc (p & 0b11111111, imgFile);
+            //fputc (p >> 8, imgFile);
+            //fputwc (x, imgFile);
+        }
+    }
+
+    fclose(imgFile);
 }
 
 image::~image () {

@@ -4,6 +4,7 @@
 #include "fractal.h"
 #include "equationparser.h"
 #include "image.h"
+#include "gui.h"
 
 #define TERMINAL_UPDATES
 
@@ -39,9 +40,7 @@ class hfractal_main {
         return 1;
     }
 
-    void thread_main (int i) {
-        // Range of execution is between ((resolution*resolution)/worker_threads)*i and ((resolution*resolution)/worker_threads)*(i+1)
-        
+    void thread_main (int i) {        
         double p = 2/(zoom*resolution);
         double q = (1-offset_x)/zoom;
         double r = (1+offset_y)/zoom;
@@ -53,7 +52,7 @@ class hfractal_main {
             double b = r - (p*y);
             complex<double> c = complex<double> (a,b);
             int res = logf((float)(main_equation->evaluate (c, eval_limit))/(float)eval_limit)*255;
-            img->set (x, y, res, res, res);
+            img->set (x, y, res);
             next = img->get_uncompleted();
         }
     }
@@ -97,7 +96,7 @@ public:
         std::cout << std::endl;
         for (auto th : thread_pool) th->join();
         std::cout << "Writing... ";
-        img->write("out.png");
+        img->write("out.pgm");
         std::cout << "Done." << endl;
         return 0;
     }
@@ -106,6 +105,8 @@ public:
 };
 
 int main (int argc, char *argv[]) {
-    hfractal_main hm;
-    hm.main (argc, argv);
+    //hfractal_main hm;
+    //hm.main (argc, argv);
+    return gui_main();
+
 }

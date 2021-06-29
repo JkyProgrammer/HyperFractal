@@ -1,14 +1,19 @@
 cc_files := $(wildcard src/*.cc)
 output   = HyperFractal
-CC       = g++
-CC_args  = -Wall -std=c++11
+ifeq ($(OS),Windows_NT)
+	@echo This Makefile is not configured for building on Windows
+else
+	CC       = g++
+	CC_args  = -Wall -std=c++11
+	raylib_flags = -framework IOKit -framework Cocoa -framework OpenGL lib/libraylib.a
+endif
 
 build:
-	@$(CC) $(CC_args) $(cc_files) lib/libraylib.a -o $(output)
+	@$(CC) $(CC_args) $(cc_files) $(raylib_flags) -o $(output)
 	@echo Done.
 
 run: $(build)
-	@./HyperFractal 4096 -1 0.0 2.0 "(z^2)+c" 4 150
+	@./HyperFractal 1024 0.0 0.0 0.75 "(z^2)+c" 4 150
 
 clean:
 	@rm HyperFractal
