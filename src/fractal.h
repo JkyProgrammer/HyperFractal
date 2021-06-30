@@ -1,7 +1,7 @@
 #include <complex>
 
-#ifndef FRACTAL
-#define FRACTAL
+#ifndef FRACTAL_H
+#define FRACTAL_H
 
 using namespace std;
 

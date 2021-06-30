@@ -23,9 +23,9 @@ image::image(int w, int h) {
     c_ind = 0;
 }
 
-void image::write (const char* path) {
+void image::write (std::string path) {
     FILE *imgFile;
-    imgFile = fopen(path,"wb");
+    imgFile = fopen(path.c_str(),"wb");
 
     fprintf(imgFile,"P5\n");
     fprintf(imgFile,"%d %d\n",width,height);

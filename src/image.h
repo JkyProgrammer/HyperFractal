@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <mutex>
 
+#ifndef IMAGE_H
+#define IMAGE_H
 class image {
 private:
     int width;
@@ -15,6 +17,7 @@ public:
     int get_uncompleted ();
     bool is_done ();
     int get_ind ();
-    void write (const char* path);
+    void write (std::string path);
     ~image ();
 };
+#endif

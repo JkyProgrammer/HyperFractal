@@ -1,7 +1,7 @@
 #include "fractal.h"
 
-#ifndef EQUATIONPARSER
-#define EQUATIONPARSER
+#ifndef EQUATIONPARSER_H
+#define EQUATIONPARSER_H
 
 equation* extract_equation (string seq);
 
