@@ -21,7 +21,6 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
         for (int y = 0; y < hm->resolution; y++) {
             int v = hm->img->get(x,y);
             float f = (float)v/(float)UINT16_MAX;
-            //std::cout << f << std::endl;
             pixels[(y*hm->resolution)+x] = (v == hm->eval_limit) ? BLACK : ColorFromHSV(logf(v), 0.5, 0.75);
             if (hm->img->completed[(y*hm->resolution)+x] != 2) pixels[(y*hm->resolution)+x].a = 0;
         }
@@ -36,6 +35,14 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
     return img;
 }
 
+// TODO: Mini-console
+// TODO: Implement existing buttons
+// TODO: Equation input
+// TODO: Add Movement controlls
+// TODO: Add equation presets
+// TODO: Add numerical zoom/offset inputs
+// TODO: Click navigation
+
 int gui_main () {
     hfractal_main* hm = new hfractal_main();
     hfractal_main* lowres_hm = new hfractal_main();
@@ -43,6 +50,7 @@ int gui_main () {
     int imageDimension = WINDOW_INIT_HEIGHT;
     int controlPanelWidth = WINDOW_INIT_WIDTH - imageDimension;
 
+    SetTraceLogLevel (LOG_WARNING | LOG_ERROR);
     InitWindow(WINDOW_INIT_WIDTH, WINDOW_INIT_HEIGHT, "HyperFractal Mathematical Visualiser");
     SetWindowState (FLAG_WINDOW_RESIZABLE);
     int minHeight = std::max (256, CONTROL_MIN_HEIGHT);
@@ -52,7 +60,7 @@ int gui_main () {
     hm->resolution = imageDimension;
     hm->eq = string("(z^2)+c");
     hm->eval_limit = 400;
-    hm->worker_threads = 2;
+    hm->worker_threads = 1;
     hm->zoom = 1.0;
 
     lowres_hm->resolution = 64;
@@ -63,21 +71,17 @@ int gui_main () {
     
 
     bool buttonStates[BUTTON_NUM_TOTAL] = {false};
-    Image bufferImage;
-    Texture2D tex;
+    Image bufferImage = {};
+    Texture2D tex = {};
 
     bool imageNeedsUpdate = true;
 
     bool isRendering = false;
     bool isOutdatedRender = false;
-    std::cout << (lowres_hm->img->is_done() ? "true" : "false") << std::endl;
-    std::cout << (hm->img->is_done() ? "true" : "false") << std::endl;
     lowres_hm->generateImage(true);
-    std::cout << (lowres_hm->img->is_done() ? "true" : "false") << std::endl;
-    std::cout << (hm->img->is_done() ? "true" : "false") << std::endl;
 
     while (!WindowShouldClose()) {
-        if (buttonStates[0] && !isRendering) {
+        if (buttonStates[0] && !isRendering && !imageNeedsUpdate) {
             std::cout << "Rerendering..." << std::endl;
             isRendering = true;
             lowres_hm->generateImage(true);
@@ -86,20 +90,28 @@ int gui_main () {
             imageNeedsUpdate = true;
             sleepcp (1);
         }
-        if (buttonStates[1]) std::cout << "Zoom in." << std::endl;
+        if (buttonStates[1]) {
+            std::cout << "Zoom in." << std::endl;
+            isOutdatedRender = true;
+            imageNeedsUpdate = true;
+            lowres_hm->zoom *= 2;
+            hm->zoom *= 2;
+            lowres_hm->generateImage (true);
+            sleepcp (1);
+        }
         if (buttonStates[2]) std::cout << "Zoom out." << std::endl;
         if (buttonStates[3]) std::cout << "Save Image." << std::endl;
         if (buttonStates[4]) std::cout << "Save Render State." << std::endl;
         if (buttonStates[5]) std::cout << "Load Render State." << std::endl;
         if (imageNeedsUpdate) {
-            // TODO: Fix memory management
-            //UnloadImage (bufferImage);
-            //free(bufferImage.data);
-            //UnloadTexture (tex);
             if (hm->img->is_done() && !isOutdatedRender) {
+                UnloadImage (bufferImage);
+                UnloadTexture (tex);
                 bufferImage = convert (hm); isRendering = false;
                 tex = LoadTextureFromImage(bufferImage);
-            } else if (lowres_hm->img->is_done()) { 
+            } else if (lowres_hm->img->is_done()) {
+                UnloadImage (bufferImage);
+                UnloadTexture (tex);
                 bufferImage = convert (lowres_hm);
                 ImageResize (&bufferImage, hm->resolution, hm->resolution);
                 tex = LoadTextureFromImage(bufferImage);
@@ -114,6 +126,8 @@ int gui_main () {
             } else {
                 Image tmp = convert (hm);
                 ImageDraw (&bufferImage, tmp, (Rectangle){0,0,(float)hm->resolution,(float)hm->resolution}, (Rectangle){0,0,(float)hm->resolution,(float)hm->resolution}, WHITE);
+                UnloadImage (tmp);
+                UnloadTexture (tex);
                 tex = LoadTextureFromImage(bufferImage);
             }
         }
