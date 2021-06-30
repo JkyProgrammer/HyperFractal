@@ -19,7 +19,7 @@ void hfractal_main::thread_main () {
 }
 
 int hfractal_main::generateImage (bool wait=true) {
-    cout << "Parsing equation: \"" << eq + "\"" << endl;
+    std::cout << "Parsing equation: \"" << eq + "\"" << std::endl;
     main_equation = extract_equation (eq);
     if (img != NULL) img->~image();
     img = new image (resolution, resolution);
@@ -46,6 +46,7 @@ int hfractal_main::generateImage (bool wait=true) {
         std::cout << std::endl;
         for (auto th : thread_pool) th->join();
     }
+    std::cout << "Rendering done." << std::endl;
     return 0;
 }
 
