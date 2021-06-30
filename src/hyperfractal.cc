@@ -1,7 +1,7 @@
 #include "hyperfractal.h"
 #include <iostream>
 
-void hfractal_main::thread_main (int i) {        
+void hfractal_main::thread_main () {        
     double p = 2/(zoom*resolution);
     double q = (1-offset_x)/zoom;
     double r = (1+offset_y)/zoom;
@@ -18,29 +18,34 @@ void hfractal_main::thread_main (int i) {
     }
 }
 
-int hfractal_main::generateImage () {
-    cout << "Parsing equation: \"" << *eq + "\"" << endl;
-    main_equation = extract_equation (*eq);
+int hfractal_main::generateImage (bool wait=true) {
+    cout << "Parsing equation: \"" << eq + "\"" << endl;
+    main_equation = extract_equation (eq);
+    if (img != NULL) img->~image();
+    img = new image (resolution, resolution);
 
+    thread_pool.clear();
     for (int i = 0; i < worker_threads; i++) {
-        std::thread *t = new std::thread(&hfractal_main::thread_main, this, i);
+        std::thread *t = new std::thread(&hfractal_main::thread_main, this);
         thread_pool.push_back (t);
     }
 
-    while (true) {
-        #ifdef TERMINAL_UPDATES
-        float percent = ((float)(img->get_ind())/(float)(resolution*resolution))*100;
-        std::cout << "\r";
-        std::cout << "Working: ";
-        for (int k = 2; k <= 100; k+=2) { if (k <= percent) std::cout << "█"; else std::cout << "_"; }
-        std::cout << " | ";
-        std::cout << round(percent) << "%";
-        #endif
-        sleepcp (2);
-        if (img->is_done()) break;
+    if (wait) {
+        while (true) {
+            if (img->is_done()) break;
+            #ifdef TERMINAL_UPDATES
+            float percent = ((float)(img->get_ind())/(float)(resolution*resolution))*100;
+            std::cout << "\r";
+            std::cout << "Working: ";
+            for (int k = 2; k <= 100; k+=2) { if (k <= percent) std::cout << "█"; else std::cout << "_"; }
+            std::cout << " | ";
+            std::cout << round(percent) << "%";
+            #endif
+            sleepcp (2);
+        }
+        std::cout << std::endl;
+        for (auto th : thread_pool) th->join();
     }
-    std::cout << std::endl;
-    for (auto th : thread_pool) th->join();
     return 0;
 }
 

@@ -15,11 +15,21 @@ void image::set(int x, int y, uint16_t p) {
     mut.unlock();
 }
 
+uint16_t image::get(int x, int y) {
+    mut.lock();
+    if (x >= width || x < 0) { mut.unlock(); return 0; }
+    if (y >= height || y < 0) { mut.unlock(); return 0; }
+    uint16_t v = rgb_image[(y*width)+x];
+    mut.unlock();
+    return v;
+}
+
 image::image(int w, int h) {
     width = w;
     height = h;
     rgb_image = new uint16_t[width*height];
     completed = new uint8_t[width*height];
+    for (int i = 0; i < width*height; i++) completed[i] = 0;
     c_ind = 0;
 }
 
@@ -60,6 +70,7 @@ int image::get_uncompleted () {
 }
 
 bool image::is_done () {
+    if (width == 0 || height == 0) return false;
     for (int i = 0; i < height*width; i++) {
         if (completed[i] != 2) return false;
     }

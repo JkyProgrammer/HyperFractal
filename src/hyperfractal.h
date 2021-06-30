@@ -17,16 +17,16 @@ public:
     double offset_x;
     double offset_y;
     double zoom;
-    string *eq;
+    string eq;
     int worker_threads;
     int eval_limit;
     image *img = new image(0,0);
     equation *main_equation;
     std::vector<std::thread*> thread_pool;
 
-    void thread_main (int);
+    void thread_main ();
     // Arguments: int resolution, double offset_x, double offset_y, double zoom, string equation, int worker_threads, int eval_limit
-    int generateImage ();
+    int generateImage (bool);
 
     bool write (string);
 

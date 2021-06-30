@@ -8,11 +8,12 @@ private:
     int width;
     int height;
     uint16_t * rgb_image;
-    uint8_t * completed;
     int c_ind;
     std::mutex mut;
 public:
+    uint8_t * completed;
     void set (int, int, uint16_t);
+    uint16_t get (int, int);
     image (int, int);
     int get_uncompleted ();
     bool is_done ();

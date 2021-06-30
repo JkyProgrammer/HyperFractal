@@ -15,5 +15,8 @@ build:
 run: $(build)
 	@./HyperFractal 1024 0.0 0.0 0.75 "(z^2)+c" 4 150
 
+guirun: $(build)
+	@./HyperFractal
+
 clean:
 	@rm HyperFractal
