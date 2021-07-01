@@ -1,6 +1,6 @@
 #ifndef HYPERFRACTAL_H
 #define HYPERFRACTAL_H
-#define TERMINAL_UPDATES
+//#define TERMINAL_UPDATES
 
 #include <string>
 #include <thread>
@@ -13,10 +13,10 @@ void sleepcp(int);
 
 class hfractal_main {
 public:
-    int resolution;
-    double offset_x;
-    double offset_y;
-    double zoom;
+    int resolution = 1;
+    double offset_x = 0;
+    double offset_y = 0;
+    double zoom = 1;
     string eq;
     int worker_threads;
     int eval_limit;

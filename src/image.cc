@@ -24,13 +24,10 @@ uint16_t image::get(int x, int y) {
     return v;
 }
 
-image::image(int w, int h) {
-    width = w;
-    height = h;
+image::image(int w, int h) : width(w), height(h), c_ind(0) {
     rgb_image = new uint16_t[width*height];
     completed = new uint8_t[width*height];
     for (int i = 0; i < width*height; i++) completed[i] = 0;
-    c_ind = 0;
 }
 
 void image::write (std::string path) {

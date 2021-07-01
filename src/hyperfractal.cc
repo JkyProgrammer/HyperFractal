@@ -5,6 +5,7 @@ void hfractal_main::thread_main () {
     double p = 2/(zoom*resolution);
     double q = (1/zoom)-offset_x;
     double r = (1/zoom)+offset_y;
+    
     int next = img->get_uncompleted();
     while (next != -1) {
         int x = next%resolution;
@@ -28,7 +29,6 @@ int hfractal_main::generateImage (bool wait=true) {
     for (int i = 0; i < worker_threads; i++) {
         std::thread *t = new std::thread(&hfractal_main::thread_main, this);
         thread_pool.push_back (t);
-        sleepcp (5);
     }
 
     if (wait) {

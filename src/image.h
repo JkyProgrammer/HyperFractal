@@ -8,17 +8,25 @@ private:
     int width;
     int height;
     uint16_t * rgb_image;
-    int c_ind;
+    int c_ind = 0;
     std::mutex mut;
 public:
+    image (int, int);
+    ~image ();
     uint8_t * completed;
     void set (int, int, uint16_t);
     uint16_t get (int, int);
-    image (int, int);
     int get_uncompleted ();
     bool is_done ();
     int get_ind ();
     void write (std::string path);
-    ~image ();
 };
+
+#include <iostream>
+inline std::ostream & operator<<(std::ostream & Str, image & v) { 
+  std::cout << "Image :" << &v << std::endl;
+  std::cout << v.get_ind() << std::endl;
+  std::cout << v.is_done() << std::endl;
+  return Str;
+}
 #endif

@@ -42,12 +42,11 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
 // TODO: Fix movement controls
 // TODO: Add equation presets
 // TODO: Add numerical zoom/offset inputs (TF)
-// TODO: Click navigation <-
 // TODO: Worker threads & eval limit controls (TF)
 
 int gui_main () {
-    hfractal_main* hm = new hfractal_main();
     hfractal_main* lowres_hm = new hfractal_main();
+    hfractal_main* hm = new hfractal_main();
 
     int imageDimension = WINDOW_INIT_HEIGHT;
     int controlPanelWidth = WINDOW_INIT_WIDTH - imageDimension;
@@ -104,7 +103,6 @@ int gui_main () {
         }
 
         // Respond to button presses
-        // TODO: Fix weird black screen bug
         if (buttonStates[0] && !isRendering && !imageNeedsUpdate) {
             std::cout << "Rerendering..." << std::endl;
             isRendering = true;
