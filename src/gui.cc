@@ -6,13 +6,15 @@
 #define RAYGUI_IMPLEMENTATION
 #define RAYGUI_SUPPORT_ICONS
 #include "../lib/raygui.h"
+#include "../lib/ricons.h"
 
 #define SCALE_STEP_FACTOR 1.5
+#define MOVE_STEP_FACTOR 0.1
 #define WINDOW_INIT_WIDTH 800
 #define WINDOW_INIT_HEIGHT 450
 #define BUTTON_HEIGHT 40
-#define ELEMENT_NUM_VERTICAL 6
-#define BUTTON_NUM_TOTAL 6
+#define ELEMENT_NUM_VERTICAL 9
+#define BUTTON_NUM_TOTAL 10
 #define CONTROL_MIN_WIDTH 250
 #define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL
 
@@ -21,8 +23,7 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
     for (int x = 0; x < hm->resolution; x++) {
         for (int y = 0; y < hm->resolution; y++) {
             int v = hm->img->get(x,y);
-            float f = (float)v/(float)UINT16_MAX;
-            pixels[(y*hm->resolution)+x] = (v == hm->eval_limit) ? BLACK : ColorFromHSV(logf(v), 0.5, 0.75);
+            pixels[(y*hm->resolution)+x] = (v == hm->eval_limit) ? BLACK : ColorFromHSV(v, 0.5, 0.75);
             if (hm->img->completed[(y*hm->resolution)+x] != 2) pixels[(y*hm->resolution)+x].a = 0;
         }
     }
@@ -38,7 +39,7 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
 
 // TODO: Implement existing buttons
 // TODO: Equation input
-// TODO: Add Movement controls <-
+// TODO: Fix movement controls
 // TODO: Add equation presets
 // TODO: Add numerical zoom/offset inputs (TF)
 // TODO: Click navigation <-
@@ -58,32 +59,52 @@ int gui_main () {
     SetWindowMinSize(minHeight+CONTROL_MIN_WIDTH, minHeight);  
     SetTargetFPS(30);
 
+    // Configure full resolution renderer
     hm->resolution = imageDimension;
     hm->eq = string("(z^2)+c");
-    hm->eval_limit = 400;
-    hm->worker_threads = 1;
+    hm->eval_limit = 2000;
+    hm->worker_threads = 4;
     hm->zoom = 1.0;
 
+    // Configure preivew renderer
     lowres_hm->resolution = 64;
     lowres_hm->eq = string("(z^2)+c");
-    lowres_hm->eval_limit = 100;
+    lowres_hm->eval_limit = 500;
     lowres_hm->worker_threads = 2;
     lowres_hm->zoom = 1.0;
     
-
+    // Declare states and variables for carrying data between mainloop passes
     bool buttonStates[BUTTON_NUM_TOTAL] = {false};
     Image bufferImage = {};
     Texture2D tex = {};
-
     bool imageNeedsUpdate = true;
-
     bool isRendering = false;
     bool isOutdatedRender = false;
     string consoleText = "Ready.";
-    lowres_hm->generateImage(true);
     float percent = 0;
 
+    // Generate the initial preview render
+    lowres_hm->generateImage(true);
+
     while (!WindowShouldClose()) {
+        // Detect clicking to recenter
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !isRendering) {
+            Vector2 mpos = GetMousePosition();
+            if (mpos.x <= imageDimension && mpos.y <= imageDimension) {
+                lowres_hm->offset_x += (mpos.x-(imageDimension/2))/(float)(imageDimension/2)/hm->zoom;
+                lowres_hm->offset_y -= (mpos.y-(imageDimension/2))/(float)(imageDimension/2)/hm->zoom;
+                hm->offset_x += (mpos.x-(imageDimension/2))/(float)(imageDimension/2)/hm->zoom;
+                hm->offset_y -= (mpos.y-(imageDimension/2))/(float)(imageDimension/2)/hm->zoom;
+                isOutdatedRender = true;
+                consoleText = "Outdated!";
+                imageNeedsUpdate = true;
+                lowres_hm->generateImage (true);
+                sleepcp (1);
+            }
+        }
+
+        // Respond to button presses
+        // TODO: Fix weird black screen bug
         if (buttonStates[0] && !isRendering && !imageNeedsUpdate) {
             std::cout << "Rerendering..." << std::endl;
             isRendering = true;
@@ -94,14 +115,7 @@ int gui_main () {
             imageNeedsUpdate = true;
             sleepcp (1);
         }
-        if (isRendering) {
-            consoleText = "Rendering: ";
-            percent = round(((float)(hm->img->get_ind())/(float)(hm->resolution*hm->resolution))*100);
-            consoleText += std::to_string(percent);
-            consoleText += "%";
-        }
-        if (buttonStates[1]) {
-            std::cout << "Zoom in." << std::endl;
+        if (buttonStates[1] && !isRendering) {
             isOutdatedRender = true;
             consoleText = "Outdated!";
             imageNeedsUpdate = true;
@@ -110,8 +124,7 @@ int gui_main () {
             lowres_hm->generateImage (true);
             sleepcp (1);
         }
-        if (buttonStates[2]) {
-            std::cout << "Zoom out." << std::endl;
+        if (buttonStates[2] && !isRendering) {
             isOutdatedRender = true;
             consoleText = "Outdated!";
             imageNeedsUpdate = true;
@@ -123,6 +136,44 @@ int gui_main () {
         if (buttonStates[3]) std::cout << "Save Image." << std::endl;
         if (buttonStates[4]) std::cout << "Save Render State." << std::endl;
         if (buttonStates[5]) std::cout << "Load Render State." << std::endl;
+        if ((buttonStates[6] || IsKeyDown(KEY_UP)) && !isRendering) { // TODO: Fix moving bug at high zoom
+            hm->offset_y += MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
+            lowres_hm->offset_y += MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
+            isOutdatedRender = true;
+            consoleText = "Outdated!";
+            imageNeedsUpdate = true;
+            lowres_hm->generateImage (true);
+            sleepcp (1);
+        }
+        if ((buttonStates[7] || IsKeyDown(KEY_LEFT)) && !isRendering) {
+            hm->offset_x -= MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
+            lowres_hm->offset_x -= MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
+            isOutdatedRender = true;
+            consoleText = "Outdated!";
+            imageNeedsUpdate = true;
+            lowres_hm->generateImage (true);
+            sleepcp (1);
+        }
+        if ((buttonStates[8] || IsKeyDown(KEY_RIGHT)) && !isRendering) {
+            hm->offset_x += MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
+            lowres_hm->offset_x += MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
+            isOutdatedRender = true;
+            consoleText = "Outdated!";
+            imageNeedsUpdate = true;
+            lowres_hm->generateImage (true);
+            sleepcp (1);
+        }
+        if ((buttonStates[9] || IsKeyDown(KEY_DOWN)) && !isRendering) {
+            hm->offset_y -= MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
+            lowres_hm->offset_y -= MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
+            isOutdatedRender = true;
+            consoleText = "Outdated!";
+            imageNeedsUpdate = true;
+            lowres_hm->generateImage (true);
+            sleepcp (1);
+        }
+        
+        // Image updating code  
         if (imageNeedsUpdate) {
             if (hm->img->is_done() && !isOutdatedRender) {
                 UnloadImage (bufferImage);
@@ -141,6 +192,10 @@ int gui_main () {
             imageNeedsUpdate = false;
         }
         if (isRendering) {
+            consoleText = "Rendering: ";
+            percent = round(((float)(hm->img->get_ind())/(float)(hm->resolution*hm->resolution))*100);
+            consoleText += std::to_string(percent);
+            consoleText += "%";
             if (hm->img->is_done()) {
                 isRendering = false;
                 imageNeedsUpdate = true;
@@ -160,17 +215,40 @@ int gui_main () {
         controlPanelWidth = GetScreenWidth()-imageDimension;
         if (!isRendering) {hm->resolution = imageDimension;}
         BeginDrawing();
-        ClearBackground(RAYWHITE);        
+        ClearBackground(RAYWHITE);
+
+        // Draw the rendered image      
         Vector2 v {0,0};
         DrawTextureEx (tex, v, 0, (float)imageDimension/(float)tex.height, WHITE);
-        GuiTextBox((Rectangle){(float)imageDimension, 0, (float)controlPanelWidth, BUTTON_HEIGHT}, (char*)consoleText.c_str(), 1, false);
-        buttonStates[0] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT, (float)controlPanelWidth, BUTTON_HEIGHT}, "Rerender Image");
-        GuiProgressBar ((Rectangle){(float)imageDimension, BUTTON_HEIGHT*2, (float)controlPanelWidth, BUTTON_HEIGHT}, "", "", percent, 0, 100);
-        buttonStates[1] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*3, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Zoom In");
-        buttonStates[2] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*3, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Zoom Out");
-        buttonStates[3] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*4, (float)controlPanelWidth, BUTTON_HEIGHT}, "Save Image");
-        buttonStates[4] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*5, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Save Render State");
-        buttonStates[5] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*5, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Load Render State");
+        // Draw Console
+        int buttonOffset = 0;
+        GuiTextBox((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth, BUTTON_HEIGHT}, (char*)consoleText.c_str(), 1, false);
+        // Draw "Render Image" button
+        buttonOffset++;
+        buttonStates[0] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth, BUTTON_HEIGHT}, "Render Image");
+        // Draw render progress bar
+        buttonOffset++;
+        GuiProgressBar ((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth, BUTTON_HEIGHT}, "", "", percent, 0, 100);
+        // Draw zoom buttons
+        buttonOffset++;
+        buttonStates[1] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Zoom In");
+        buttonStates[2] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Zoom Out");
+        // Draw save image button
+        buttonOffset++;
+        buttonStates[3] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth, BUTTON_HEIGHT}, "Save Image");
+        // Draw render state load/save buttons
+        buttonOffset++;
+        buttonStates[4] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Save Render State");
+        buttonStates[5] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Load Render State");
+        // Draw movement navigation buttons
+        buttonOffset++;
+        buttonStates[6] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-BUTTON_HEIGHT)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, GuiIconText(RICON_ARROW_TOP_FILL, "up"));
+        buttonOffset++;
+        buttonStates[7] = GuiButton((Rectangle){(float)imageDimension+(((float)controlPanelWidth)/2)-BUTTON_HEIGHT, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, GuiIconText(RICON_ARROW_LEFT_FILL, "left"));
+        buttonStates[8] = GuiButton((Rectangle){(float)imageDimension+(((float)controlPanelWidth)/2), BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, GuiIconText(RICON_ARROW_RIGHT_FILL, "right"));
+        buttonOffset++;
+        buttonStates[9] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-BUTTON_HEIGHT)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, GuiIconText(RICON_ARROW_BOTTOM_FILL, "down"));
+
         EndDrawing();
     }
 

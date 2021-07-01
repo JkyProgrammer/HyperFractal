@@ -1,10 +1,10 @@
 #include "hyperfractal.h"
 #include <iostream>
 
-void hfractal_main::thread_main () {        
+void hfractal_main::thread_main () {
     double p = 2/(zoom*resolution);
-    double q = (1-offset_x)/zoom;
-    double r = (1+offset_y)/zoom;
+    double q = (1/zoom)-offset_x;
+    double r = (1/zoom)+offset_y;
     int next = img->get_uncompleted();
     while (next != -1) {
         int x = next%resolution;
@@ -12,7 +12,7 @@ void hfractal_main::thread_main () {
         double a = (p*x) - q;
         double b = r - (p*y);
         complex<double> c = complex<double> (a,b);
-        int res = logf((float)(main_equation->evaluate (c, eval_limit))/(float)eval_limit)*255;
+        int res = (main_equation->evaluate (c, eval_limit));
         img->set (x, y, res);
         next = img->get_uncompleted();
     }
@@ -28,6 +28,7 @@ int hfractal_main::generateImage (bool wait=true) {
     for (int i = 0; i < worker_threads; i++) {
         std::thread *t = new std::thread(&hfractal_main::thread_main, this);
         thread_pool.push_back (t);
+        sleepcp (5);
     }
 
     if (wait) {
