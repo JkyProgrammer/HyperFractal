@@ -20,6 +20,13 @@ void hfractal_main::thread_main () {
 }
 
 int hfractal_main::generateImage (bool wait=true) {
+    std::cout << "Rendering with parameters: " << std::endl;
+    std::cout << "Resolution=" << resolution << std::endl;
+    std::cout << "EvaluationLimit=" << eval_limit << std::endl;
+    std::cout << "Threads=" << worker_threads << std::endl;
+    std::cout << "Zoom=" << zoom << std::endl;
+    std::cout << "OffsetX=" << offset_x << std::endl;
+    std::cout << "OffsetY=" << offset_y << std::endl;
     std::cout << "Parsing equation: \"" << eq + "\"" << std::endl;
     main_equation = extract_equation (eq);
     if (img != NULL) img->~image();

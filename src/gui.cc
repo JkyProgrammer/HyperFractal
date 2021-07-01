@@ -31,8 +31,8 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
         .data = pixels,
         .width = hm->resolution,
         .height = hm->resolution,
-        .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8,
-        .mipmaps = 1
+        .mipmaps = 1,
+        .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
     };
     return img;
 }
@@ -62,7 +62,7 @@ int gui_main () {
     hm->resolution = imageDimension;
     hm->eq = string("(z^2)+c");
     hm->eval_limit = 2000;
-    hm->worker_threads = 4;
+    hm->worker_threads = 12;
     hm->zoom = 1.0;
 
     // Configure preivew renderer
