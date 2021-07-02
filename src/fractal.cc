@@ -1,17 +1,17 @@
 #include "fractal.h"
 #include <iostream>
 
-bool is_infinity (complex<double> comp) {
-    return pow(comp.real(),2.0) + pow(comp.imag(),2.0) > (double)2;
+bool is_infinity (complex<long double> comp) {
+    return pow(comp.real(),2.0) + pow(comp.imag(),2.0) > (long double)2;
 }
 
-value::value (complex<double> c) {
+value::value (complex<long double> c) {
     cVal = c;
     type = 0;
 }
 
-value::value (double c) {
-    cVal = complex<double> (c, 0);
+value::value (long double c) {
+    cVal = complex<long double> (c, 0);
     type = 0;
 }
 
@@ -29,9 +29,9 @@ value::value () {
 
 }
 
-complex<double> equation::compute (complex<double> z, complex<double> c) {
-    complex<double> v1;
-    complex<double> v2;
+complex<long double> equation::compute (complex<long double> z, complex<long double> c) {
+    complex<long double> v1;
+    complex<long double> v2;
     if (a.type == 0) v1 = a.cVal;
     else if (a.type == 1) v1 = a.lVal ? z : c;
     else v1 = a.eVal->compute(z, c);
@@ -40,7 +40,7 @@ complex<double> equation::compute (complex<double> z, complex<double> c) {
     else if (b.type == 1) v2 = b.lVal ? z : c;
     else v2 = b.eVal->compute(z, c);
 
-    complex<double> rv = 0;
+    complex<long double> rv = 0;
     switch (operation) {
     case 0:
         rv = v1+v2;
@@ -60,8 +60,8 @@ complex<double> equation::compute (complex<double> z, complex<double> c) {
     return rv;
 }
 using namespace std;
-int equation::evaluate (complex<double> c, int limit, float threshold) {
-    complex<double> last = compute (c, c);
+int equation::evaluate (complex<long double> c, int limit, float threshold) {
+    complex<long double> last = compute (c, c);
     int depth = 0;
     while (!is_infinity(last) && (depth < limit)) {
         depth++;

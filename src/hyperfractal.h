@@ -14,9 +14,9 @@ void sleepcp(int);
 class hfractal_main {
 public:
     int resolution = 1;
-    double offset_x = 0;
-    double offset_y = 0;
-    double zoom = 1;
+    long double offset_x = 0;
+    long double offset_y = 0;
+    long double zoom = 1;
     string eq;
     int worker_threads;
     int eval_limit;
@@ -25,7 +25,7 @@ public:
     std::vector<std::thread*> thread_pool;
 
     void thread_main ();
-    // Arguments: int resolution, double offset_x, double offset_y, double zoom, string equation, int worker_threads, int eval_limit
+    // Arguments: int resolution, long double offset_x, long double offset_y, long double zoom, string equation, int worker_threads, int eval_limit
     int generateImage (bool);
 
     bool write (string);

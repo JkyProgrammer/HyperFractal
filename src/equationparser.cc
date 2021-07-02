@@ -68,15 +68,15 @@ equation* extract_equation (string sequ) {
         e->a = value (extract_equation(compos[0].substr(1,compos[0].length()-2)));
     else if (compos[0] == "z") e->a = value (true);
     else if (compos[0] == "c") e->a = value (false);
-    else if (compos[0].find('i') != -1) e->a = value (complex<double>(0,stod(compos[0].substr(0,compos[0].length()-1))));
-    else e->a = value ((double)stod(compos[0]));
+    else if (compos[0].find('i') != -1) e->a = value (complex<long double>(0,stod(compos[0].substr(0,compos[0].length()-1))));
+    else e->a = value ((long double)stod(compos[0]));
 
     // Process second component:
     if (compos[2].find('(') != -1)
         e->b = value (extract_equation(compos[2].substr(1,compos[2].length()-2)));
     else if (compos[2] == "z") e->b = value (true);
     else if (compos[2] == "c") e->b = value (false);
-    else if (compos[2].find('i') != -1) e->b = value (complex<double>(0,stod(compos[2].substr(0,compos[2].length()-1))));
-    else e->b = value ((double)stod(compos[2]));
+    else if (compos[2].find('i') != -1) e->b = value (complex<long double>(0,stod(compos[2].substr(0,compos[2].length()-1))));
+    else e->b = value ((long double)stod(compos[2]));
     return e;
 }

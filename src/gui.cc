@@ -58,19 +58,27 @@ int gui_main () {
     SetWindowMinSize(minHeight+CONTROL_MIN_WIDTH, minHeight);  
     SetTargetFPS(30);
 
+    long double start_zoom = 4.126431e+14;
+    long double start_x_offset = 0.350004947826582879738619574761;
+    long double start_y_offset = 0.422633999014268769788384497166;
+
     // Configure full resolution renderer
     hm->resolution = imageDimension;
     hm->eq = string("(z^2)+c");
     hm->eval_limit = 2000;
     hm->worker_threads = 12;
-    hm->zoom = 1.0;
+    hm->zoom = start_zoom;
+    hm->offset_x = start_x_offset;
+    hm->offset_y = start_y_offset;
 
     // Configure preivew renderer
     lowres_hm->resolution = 64;
     lowres_hm->eq = string("(z^2)+c");
     lowres_hm->eval_limit = 500;
     lowres_hm->worker_threads = 2;
-    lowres_hm->zoom = 1.0;
+    lowres_hm->zoom = start_zoom;
+    lowres_hm->offset_x = start_x_offset;
+    lowres_hm->offset_y = start_y_offset;
     
     // Declare states and variables for carrying data between mainloop passes
     bool buttonStates[BUTTON_NUM_TOTAL] = {false};
@@ -80,7 +88,7 @@ int gui_main () {
     bool isRendering = false;
     bool isOutdatedRender = false;
     string consoleText = "Ready.";
-    float percent = 0;
+    int percent = 0;
 
     // Generate the initial preview render
     lowres_hm->generateImage(true);
@@ -90,10 +98,12 @@ int gui_main () {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !isRendering) {
             Vector2 mpos = GetMousePosition();
             if (mpos.x <= imageDimension && mpos.y <= imageDimension) {
-                lowres_hm->offset_x += (mpos.x-(imageDimension/2))/(float)(imageDimension/2)/hm->zoom;
-                lowres_hm->offset_y -= (mpos.y-(imageDimension/2))/(float)(imageDimension/2)/hm->zoom;
-                hm->offset_x += (mpos.x-(imageDimension/2))/(float)(imageDimension/2)/hm->zoom;
-                hm->offset_y -= (mpos.y-(imageDimension/2))/(float)(imageDimension/2)/hm->zoom;
+                long double changeInX = (long double)((mpos.x/(imageDimension/2))-1)/hm->zoom;
+                long double changeInY = (long double)((mpos.y/(imageDimension/2))-1)/hm->zoom;
+                lowres_hm->offset_x += changeInX;
+                lowres_hm->offset_y -= changeInY;
+                hm->offset_x += changeInX;
+                hm->offset_y -= changeInY;
                 isOutdatedRender = true;
                 consoleText = "Outdated!";
                 imageNeedsUpdate = true;

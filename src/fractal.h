@@ -7,18 +7,18 @@ using namespace std;
 
 class equation;
 
-bool is_infinity (complex<double> comp);
+bool is_infinity (complex<long double> comp);
 
 class value {
 public:
-    complex<double> cVal;
+    complex<long double> cVal;
     equation *eVal;
     bool lVal; // true - z, false - c
     int type; // 0 - Constant, 1 - letter substitution, 2 - sub-equation
 
-    value (complex<double> c);
+    value (complex<long double> c);
 
-    value (double c);
+    value (long double c);
 
     value (bool l);
 
@@ -33,8 +33,8 @@ public:
     value b;
     int operation;
 
-    complex<double> compute (complex<double> z, complex<double> c);
-    int evaluate (complex<double> c, int limit, float threshold=1.0);
+    complex<long double> compute (complex<long double> z, complex<long double> c);
+    int evaluate (complex<long double> c, int limit, float threshold=1.0);
 
     equation (value aVal, value bVal, int op);
     equation ();
