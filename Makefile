@@ -10,12 +10,19 @@ else
 	output   = HyperFractal
 endif
 
+HF_args = 1024 0.0 0.0 0.75 "(z^2)+c" 4 150
+ifeq ($(OS),Windows_NT)
+	HF = HyperFractal
+else
+	HF = ./HyperFractal
+endif
+
 build:
 	@$(CC) $(CC_args) $(cc_files) $(raylib_flags) -o $(output)
 	@echo Done.
 
 run: $(build)
-	@./$(output) 1024 0.0 0.0 0.75 "(z^2)+c" 4 150
+	@$(HF) $(HF_args)
 
 guirun: $(build)
 	@./$(output)
