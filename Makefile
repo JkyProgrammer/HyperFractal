@@ -1,9 +1,10 @@
 cc_files := $(wildcard src/*.cc)
 
 CC       = g++
-CC_args  = -std=c++17
+CC_args  = -std=c++17 -Ilib/
 ifeq ($(OS),Windows_NT)
 	raylib_flags = -L lib/WIN/ -lraylib -lopengl32 -lgdi32 -lwinmm
+	mathlib_flags = -L lib/WIN/ -lmpfr -lmpc -lgmp
 	output   = HyperFractal.exe
 else
 	raylib_flags = -L lib/MAC/ -lraylib -framework IOKit -framework Cocoa -framework OpenGL
@@ -18,7 +19,7 @@ else
 endif
 
 build:
-	@$(CC) $(CC_args) $(cc_files) $(raylib_flags) -o $(output)
+	@$(CC) $(CC_args) $(cc_files) $(raylib_flags) $(mathlib_flags) -o $(output)
 	@echo Done.
 
 run: $(build)
