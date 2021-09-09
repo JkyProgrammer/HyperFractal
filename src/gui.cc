@@ -58,9 +58,9 @@ int gui_main () {
     SetWindowMinSize(minHeight+CONTROL_MIN_WIDTH, minHeight);  
     SetTargetFPS(30);
 
-    long double start_zoom = 4.126431e+14;
-    long double start_x_offset = 0.350004947826582879738619574761;
-    long double start_y_offset = 0.422633999014268769788384497166;
+    long double start_zoom = 2;//4.126431e+14;
+    long double start_x_offset = 0;//0.350004947826582879738619574761;
+    long double start_y_offset = 0;//0.422633999014268769788384497166;
 
     // Configure full resolution renderer
     hm->resolution = imageDimension;
@@ -74,7 +74,7 @@ int gui_main () {
     // Configure preivew renderer
     lowres_hm->resolution = 64;
     lowres_hm->eq = string("(z^2)+c");
-    lowres_hm->eval_limit = 500;
+    lowres_hm->eval_limit = 100;
     lowres_hm->worker_threads = 2;
     lowres_hm->zoom = start_zoom;
     lowres_hm->offset_x = start_x_offset;

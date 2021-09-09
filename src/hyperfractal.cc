@@ -1,3 +1,9 @@
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+#endif
+
 #include "hyperfractal.h"
 #include <iostream>
 #include <iomanip>
@@ -14,8 +20,12 @@ void hfractal_main::thread_main () {
         int y = next/resolution;
         long double a = (p*x) - q;
         long double b = r - (p*y);
-        complex<long double> c = complex<long double> (a,b);
+        std::cout << "x=" << x << " y=" << y << std::endl;
+        std::cout << "a=" << a << " b=" << b << std::endl;
+        cpp_complex_512 c {a,b};
+        std::cout << "c=" << c << std::endl;
         int res = (main_equation->evaluate (c, eval_limit));
+        std::cout << res << std::endl;
         img->set (x, y, res);
         next = img->get_uncompleted();
     }
@@ -34,13 +44,11 @@ int hfractal_main::generateImage (bool wait=true) {
     main_equation = extract_equation (eq);
     if (img != NULL) img->~image();
     img = new image (resolution, resolution);
-
     thread_pool.clear();
     for (int i = 0; i < worker_threads; i++) {
         std::thread *t = new std::thread(&hfractal_main::thread_main, this);
         thread_pool.push_back (t);
     }
-
     if (wait) {
         while (true) {
             if (img->is_done()) break;
@@ -67,12 +75,6 @@ bool hfractal_main::write (string path) {
     std::cout << "Done." << endl;
     return 0;
 }
-
-#ifdef _WIN32
-    #include <windows.h>
-#else
-    #include <unistd.h>
-#endif
 
 void sleepcp(int milliseconds) {
     #ifdef _WIN32

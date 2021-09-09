@@ -3,20 +3,24 @@
 #ifndef FRACTAL_H
 #define FRACTAL_H
 
+#include <boost/multiprecision/cpp_complex.hpp>
+
+using cpp_complex_512 = boost::multiprecision::cpp_complex<100, boost::multiprecision::backends::digit_base_10, void, std::int32_t, -262142, 262143>;
+
 using namespace std;
 
 class equation;
 
-bool is_infinity (complex<long double> comp);
+bool is_infinity (cpp_complex_512 comp);
 
 class value {
 public:
-    complex<long double> cVal;
+    cpp_complex_512 cVal;
     equation *eVal;
     bool lVal; // true - z, false - c
     int type; // 0 - Constant, 1 - letter substitution, 2 - sub-equation
 
-    value (complex<long double> c);
+    value (cpp_complex_512 c);
 
     value (long double c);
 
@@ -33,8 +37,8 @@ public:
     value b;
     int operation;
 
-    complex<long double> compute (complex<long double> z, complex<long double> c);
-    int evaluate (complex<long double> c, int limit, float threshold=1.0);
+    cpp_complex_512 compute (cpp_complex_512 z, cpp_complex_512 c);
+    int evaluate (cpp_complex_512 c, int limit, float threshold=1.0);
 
     equation (value aVal, value bVal, int op);
     equation ();
