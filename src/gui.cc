@@ -9,6 +9,7 @@
 #include "../lib/ricons.h"
 
 #define SCALE_STEP_FACTOR 1.5
+#define SCALE_DEPTH_LIMIT 1.0e15
 #define MOVE_STEP_FACTOR 0.1
 #define WINDOW_INIT_WIDTH 800
 #define WINDOW_INIT_HEIGHT 450
@@ -58,9 +59,11 @@ int gui_main () {
     SetWindowMinSize(minHeight+CONTROL_MIN_WIDTH, minHeight);  
     SetTargetFPS(30);
 
-    long double start_zoom = 4.126431e+14;
-    long double start_x_offset = 0.350004947826582879738619574761;
-    long double start_y_offset = 0.422633999014268769788384497166;
+    long double start_zoom = 1.477892e+03;
+    long double start_x_offset = -1.4112756161337429028227244409698926119745010510087013244628906250000000;
+    long double start_y_offset = 0.0;
+
+    string dialogText = "";
 
     // Configure full resolution renderer
     hm->resolution = imageDimension;
@@ -81,12 +84,12 @@ int gui_main () {
     lowres_hm->offset_y = start_y_offset;
     
     // Declare states and variables for carrying data between mainloop passes
-    bool buttonStates[BUTTON_NUM_TOTAL] = {false};
-    Image bufferImage = {};
-    Texture2D tex = {};
+    bool buttonStates[BUTTON_NUM_TOTAL] = {false}; // The click states of all the buttons
+    Image bufferImage = {}; // Image buffer for the fractal image
+    Texture2D tex = {}; // Texture buffer for the fractal image
     bool imageNeedsUpdate = true;
-    bool isRendering = false;
-    bool isOutdatedRender = false;
+    bool isRendering = false; // Indicates that ...
+    bool isOutdatedRender = false; // Indicates that the full-res render is out of date (and thus is not showing)
     string consoleText = "Ready.";
     int percent = 0;
 
@@ -94,6 +97,7 @@ int gui_main () {
     lowres_hm->generateImage(true);
 
     while (!WindowShouldClose()) {
+        if (dialogText == "") {
         // Detect clicking to recenter
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !isRendering) {
             Vector2 mpos = GetMousePosition();
@@ -111,6 +115,9 @@ int gui_main () {
                 sleepcp (1);
             }
         }
+        } else {
+            GuiLock();
+        }
 
         // Respond to button presses
         if (buttonStates[0] && !isRendering && !imageNeedsUpdate) {
@@ -124,12 +131,14 @@ int gui_main () {
             sleepcp (1);
         }
         if (buttonStates[1] && !isRendering) {
-            isOutdatedRender = true;
-            consoleText = "Outdated!";
-            imageNeedsUpdate = true;
-            lowres_hm->zoom *= SCALE_STEP_FACTOR;
-            hm->zoom *= SCALE_STEP_FACTOR;
-            lowres_hm->generateImage (true);
+            if (lowres_hm->zoom <= SCALE_DEPTH_LIMIT) {
+                isOutdatedRender = true;
+                consoleText = "Outdated!";
+                imageNeedsUpdate = true;
+                lowres_hm->zoom *= SCALE_STEP_FACTOR;
+                hm->zoom *= SCALE_STEP_FACTOR;
+                lowres_hm->generateImage (true);
+            } else dialogText = "Zoom precision limit reached";
             sleepcp (1);
         }
         if (buttonStates[2] && !isRendering) {
@@ -216,6 +225,7 @@ int gui_main () {
                 tex = LoadTextureFromImage(bufferImage);
             }
         }
+        
 
         // TODO: Help/instructions
 
@@ -257,7 +267,18 @@ int gui_main () {
         buttonOffset++;
         buttonStates[9] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-BUTTON_HEIGHT)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, GuiIconText(RICON_ARROW_BOTTOM_FILL, "down"));
 
+        if (dialogText != "") {
+            int textwidth = MeasureText(dialogText.c_str(), GetFontDefault().baseSize);
+            DrawRectangle (0, 0, GetScreenWidth(), GetScreenHeight(), (Color){200, 200, 200, 128});
+            DrawRectangle ((GetScreenWidth()-textwidth-10)/2, (GetScreenHeight()-GetFontDefault().baseSize-10)/2, textwidth+10, GetFontDefault().baseSize+10, WHITE);
+            DrawText (dialogText.c_str(), (GetScreenWidth()-textwidth)/2, (GetScreenHeight()-GetFontDefault().baseSize)/2, GetFontDefault().baseSize, BLACK);
+            GuiUnlock();
+            bool close = GuiButton((Rectangle){(float)(GetScreenWidth()-textwidth-10)/2, (float)((GetScreenHeight()-GetFontDefault().baseSize-10)/2)+30, (float)(textwidth+10), (float)(GetFontDefault().baseSize+10)}, "OK");
+            if (close) dialogText = "";
+        }
+
         EndDrawing();
+        GuiUnlock();
     }
 
     UnloadImage (bufferImage);
