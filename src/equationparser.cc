@@ -38,11 +38,17 @@ vector<string> components (string seq) {
 
 equation* extract_equation (string sequ) {
     string seq = lower(sequ);
+    // while (seq[0] == '(' && seq[seq.length()-1] == ')') {
+    //     seq = seq.substr (1, seq.length()-2);
+    // }
+    //TODO: Fix edge case where (z^2) errors (prune uncessarry brackets)
+    //TODO: Fix case of something+(0) which gives all black screen
     int brackets = count_occurrences (seq, '(');
-    if (brackets != count_occurrences (seq, ')')) throw std::runtime_error("enter a valid equation: bracket mismatch");
+    if (brackets != count_occurrences (seq, ')')) return NULL; /*throw std::runtime_error("enter a valid equation: bracket mismatch");*/
     equation *e = new equation();
     vector<string> compos = components(seq);
-    if (compos.size() != 3) throw std::runtime_error("enter a valid equation: malformed expression:" + seq);
+    
+    if (compos.size() != 3) return NULL; /*throw std::runtime_error("enter a valid equation: malformed expression:" + seq);*/
     switch (compos[1][0]) {
     case '+':
         e->operation = 0;
@@ -60,9 +66,11 @@ equation* extract_equation (string sequ) {
         e->operation = 4;
         break;
     default:
-        throw std::runtime_error("enter a valid equation: invalid operation");
+        return NULL; /*throw std::runtime_error("enter a valid equation: invalid operation");*/
         break;
     }
+
+    if (compos[0].length() == 0 || compos[2].length() == 0) return NULL;
     // Process first component:
     if (compos[0].find('(') != -1)
         e->a = value (extract_equation(compos[0].substr(1,compos[0].length()-2)));

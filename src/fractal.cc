@@ -34,11 +34,13 @@ complex<long double> equation::compute (complex<long double> z, complex<long dou
     complex<long double> v2;
     if (a.type == 0) v1 = a.cVal;
     else if (a.type == 1) v1 = a.lVal ? z : c;
-    else v1 = a.eVal->compute(z, c);
+    else if (a.eVal != NULL) v1 = a.eVal->compute(z, c);
+    else return 0;
 
     if (b.type == 0) v2 = b.cVal;
     else if (b.type == 1) v2 = b.lVal ? z : c;
-    else v2 = b.eVal->compute(z, c);
+    else if (b.eVal != NULL) v2 = b.eVal->compute(z, c);
+    else return 0;
 
     complex<long double> rv = 0;
     switch (operation) {
@@ -60,12 +62,12 @@ complex<long double> equation::compute (complex<long double> z, complex<long dou
     return rv;
 }
 using namespace std;
-int equation::evaluate (complex<long double> c, int limit, float threshold) {
-    complex<long double> last = compute (c, c);
+int equation::evaluate (complex<long double> c, int limit) {
+    complex<long double> last = c;
     int depth = 0;
     while (!is_infinity(last) && (depth < limit)) {
-        depth++;
         last = compute (last, c);
+        depth++;
     }
     return depth;
 }

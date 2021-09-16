@@ -14,7 +14,7 @@
 #define WINDOW_INIT_WIDTH 800
 #define WINDOW_INIT_HEIGHT 450
 #define BUTTON_HEIGHT 40
-#define ELEMENT_NUM_VERTICAL 9
+#define ELEMENT_NUM_VERTICAL 10
 #define BUTTON_NUM_TOTAL 10
 #define CONTROL_MIN_WIDTH 250
 #define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL
@@ -44,6 +44,7 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
 // TODO: Add equation presets
 // TODO: Add numerical zoom/offset inputs (TF)
 // TODO: Worker threads & eval limit controls (TF)
+// TODO: Benchmark everything
 
 int gui_main () {
     hfractal_main* lowres_hm = new hfractal_main();
@@ -59,8 +60,8 @@ int gui_main () {
     SetWindowMinSize(minHeight+CONTROL_MIN_WIDTH, minHeight);  
     SetTargetFPS(30);
 
-    long double start_zoom = 1.477892e+03;
-    long double start_x_offset = -1.4112756161337429028227244409698926119745010510087013244628906250000000;
+    long double start_zoom = 1.0; //1.477892e+03;
+    long double start_x_offset = 0.0;//-1.4112756161337429028227244409698926119745010510087013244628906250000000;
     long double start_y_offset = 0.0;
 
     string dialogText = "";
@@ -95,7 +96,7 @@ int gui_main () {
 
     // Generate the initial preview render
     lowres_hm->generateImage(true);
-
+    string equationTmp = "(z^2)+c";
     while (!WindowShouldClose()) {
         if (dialogText == "") {
         // Detect clicking to recenter
@@ -153,9 +154,9 @@ int gui_main () {
         if (buttonStates[3]) std::cout << "Save Image." << std::endl;
         if (buttonStates[4]) std::cout << "Save Render State." << std::endl;
         if (buttonStates[5]) std::cout << "Load Render State." << std::endl;
-        if ((buttonStates[6] || IsKeyDown(KEY_UP)) && !isRendering) { // TODO: Fix moving bug at high zoom
-            hm->offset_y += MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
-            lowres_hm->offset_y += MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
+        if ((buttonStates[6] || IsKeyDown(KEY_UP)) && !isRendering) {// TODO: Fix moving bug at high zoom
+            hm->offset_y += MOVE_STEP_FACTOR/hm->zoom;
+            lowres_hm->offset_y += MOVE_STEP_FACTOR/hm->zoom;
             isOutdatedRender = true;
             consoleText = "Outdated!";
             imageNeedsUpdate = true;
@@ -163,8 +164,8 @@ int gui_main () {
             sleepcp (1);
         }
         if ((buttonStates[7] || IsKeyDown(KEY_LEFT)) && !isRendering) {
-            hm->offset_x -= MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
-            lowres_hm->offset_x -= MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
+            hm->offset_x -= MOVE_STEP_FACTOR/hm->zoom;
+            lowres_hm->offset_x -= MOVE_STEP_FACTOR/hm->zoom;
             isOutdatedRender = true;
             consoleText = "Outdated!";
             imageNeedsUpdate = true;
@@ -172,8 +173,8 @@ int gui_main () {
             sleepcp (1);
         }
         if ((buttonStates[8] || IsKeyDown(KEY_RIGHT)) && !isRendering) {
-            hm->offset_x += MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
-            lowres_hm->offset_x += MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
+            hm->offset_x += MOVE_STEP_FACTOR/hm->zoom;
+            lowres_hm->offset_x += MOVE_STEP_FACTOR/hm->zoom;
             isOutdatedRender = true;
             consoleText = "Outdated!";
             imageNeedsUpdate = true;
@@ -181,8 +182,8 @@ int gui_main () {
             sleepcp (1);
         }
         if ((buttonStates[9] || IsKeyDown(KEY_DOWN)) && !isRendering) {
-            hm->offset_y -= MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
-            lowres_hm->offset_y -= MOVE_STEP_FACTOR*powl(1.1, -hm->zoom);
+            hm->offset_y -= MOVE_STEP_FACTOR/hm->zoom;
+            lowres_hm->offset_y -= MOVE_STEP_FACTOR/hm->zoom;
             isOutdatedRender = true;
             consoleText = "Outdated!";
             imageNeedsUpdate = true;
@@ -266,6 +267,50 @@ int gui_main () {
         buttonStates[8] = GuiButton((Rectangle){(float)imageDimension+(((float)controlPanelWidth)/2), BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, GuiIconText(RICON_ARROW_RIGHT_FILL, "right"));
         buttonOffset++;
         buttonStates[9] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-BUTTON_HEIGHT)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, GuiIconText(RICON_ARROW_BOTTOM_FILL, "down"));
+        buttonOffset++;
+        
+        bool res = GuiTextBox ((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, equationTmp.data(), 1, false);
+        int key = GetCharPressed();
+        // TODO: Fix intermediate/invalid equation
+        if (key == 122 || key == 99 || (key >= 48 && key <= 57) || key == 94 || (key >= 40 && key <= 43) || key == 45 || key == 46 || key == 47) {
+            equationTmp += (char)key;
+            std::cout << equationTmp << std::endl;
+            hm->eq = equationTmp;
+            lowres_hm->eq = equationTmp;
+            if (lowres_hm->generateImage (true)) consoleText = "Invalid equation input";
+            else {
+                isOutdatedRender = true;
+                consoleText = "Outdated!";
+                imageNeedsUpdate = true;
+            }
+            sleepcp (1);
+        } else if (GetKeyPressed () == KEY_BACKSPACE) {
+            equationTmp.pop_back();
+            std::cout << equationTmp << std::endl;
+            hm->eq = equationTmp;
+            lowres_hm->eq = equationTmp;
+            if (lowres_hm->generateImage (true)) consoleText = "Invalid equation input";
+            else {
+                isOutdatedRender = true;
+                consoleText = "Outdated!";
+                imageNeedsUpdate = true;
+            }
+            sleepcp (1);
+        }
+        if (GetKeyPressed () == KEY_ENTER) {
+            equationTmp.pop_back();
+            std::cout << equationTmp << std::endl;
+            hm->eq = equationTmp;
+            lowres_hm->eq = equationTmp;
+            if (lowres_hm->generateImage (true)) consoleText = "Invalid equation input";
+            else {
+                isOutdatedRender = true;
+                consoleText = "Outdated!";
+                imageNeedsUpdate = true;
+            }
+            sleepcp (1);
+        }
+
 
         if (dialogText != "") {
             int textwidth = MeasureText(dialogText.c_str(), GetFontDefault().baseSize);

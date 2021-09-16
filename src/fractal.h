@@ -34,7 +34,7 @@ public:
     int operation;
 
     complex<long double> compute (complex<long double> z, complex<long double> c);
-    int evaluate (complex<long double> c, int limit, float threshold=1.0);
+    int evaluate (complex<long double> c, int limit);
 
     equation (value aVal, value bVal, int op);
     equation ();

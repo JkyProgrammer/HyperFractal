@@ -32,6 +32,7 @@ int hfractal_main::generateImage (bool wait=true) {
     std::cout << "OffsetY="; printf ("%.70Lf", offset_y); std::cout << std::endl;
     std::cout << "Parsing equation: \"" << eq + "\"" << std::endl;
     main_equation = extract_equation (eq);
+    if (main_equation == NULL) { std::cout << "Stopping!" << std::endl; return 1; }
     if (img != NULL) img->~image();
     img = new image (resolution, resolution);
 
