@@ -19,6 +19,8 @@
 #define CONTROL_MIN_WIDTH 250
 #define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL
 
+using namespace std;
+
 Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vectors
     Color *pixels = (Color *)malloc((hm->resolution)*(hm->resolution)*sizeof(Color));
     for (int x = 0; x < hm->resolution; x++) {
@@ -39,12 +41,66 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
 }
 
 // TODO: Implement existing buttons
-// TODO: Equation input
 // TODO: Fix movement controls
 // TODO: Add equation presets
 // TODO: Add numerical zoom/offset inputs (TF)
 // TODO: Worker threads & eval limit controls (TF)
 // TODO: Benchmark everything
+
+void ConfigureGuiStyle () {
+    // This function implements the 'candy' interface style provided by raygui's documentation.
+    const char* stylesheet = R"(p 00 00 0x2f7486ff    DEFAULT_BORDER_COLOR_NORMAL
+p 00 01 0x024658ff    DEFAULT_BASE_COLOR_NORMAL
+p 00 02 0x51bfd3ff    DEFAULT_TEXT_COLOR_NORMAL
+p 00 03 0x82cde0ff    DEFAULT_BORDER_COLOR_FOCUSED
+p 00 04 0x3299b4ff    DEFAULT_BASE_COLOR_FOCUSED
+p 00 05 0xb6e1eaff    DEFAULT_TEXT_COLOR_FOCUSED
+p 00 06 0xeb7630ff    DEFAULT_BORDER_COLOR_PRESSED
+p 00 07 0xffbc51ff    DEFAULT_BASE_COLOR_PRESSED
+p 00 08 0xd86f36ff    DEFAULT_TEXT_COLOR_PRESSED
+p 00 09 0x134b5aff    DEFAULT_BORDER_COLOR_DISABLED
+p 00 10 0x02313dff    DEFAULT_BASE_COLOR_DISABLED
+p 00 11 0x17505fff    DEFAULT_TEXT_COLOR_DISABLED
+p 00 16 0x0000000e    DEFAULT_TEXT_SIZE
+p 00 17 0x00000000    DEFAULT_TEXT_SPACING
+p 00 18 0x81c0d0ff    DEFAULT_LINE_COLOR
+p 00 19 0x00222bff    DEFAULT_BACKGROUND_COLOR)";
+    int offset = 0;
+    int stylePointIndex = 0;
+    string stylePointControl = "";
+    string stylePointProperty = "";
+    string stylePointValue = "";
+    while (offset <= strlen(stylesheet)) {
+        if (stylesheet[offset] == ' ') {
+            stylePointIndex++;
+        } else if (stylesheet[offset] == '\n' || stylesheet[offset] == '\0') {
+            GuiSetStyle (stoi(stylePointControl), stoi(stylePointProperty), stol(stylePointValue, nullptr, 16));
+            cout << stoi(stylePointControl) << endl;
+            cout << stoi(stylePointProperty) << endl;
+            cout << stol(stylePointValue, NULL, 16) << endl;
+            stylePointControl = "";
+            stylePointProperty = "";
+            stylePointValue = "";
+            stylePointIndex = 0;
+        } else {
+            switch (stylePointIndex) {
+            case 1:
+                stylePointControl += stylesheet[offset];
+                break;
+            case 2:
+                stylePointProperty += stylesheet[offset];
+                break;
+            case 3:
+                stylePointValue += stylesheet[offset];
+                break;
+            default:
+                break;
+            }
+        }
+        offset++;
+    }
+    GuiUpdateStyleComplete();
+}
 
 int gui_main () {
     hfractal_main* lowres_hm = new hfractal_main();
@@ -53,15 +109,18 @@ int gui_main () {
     int imageDimension = WINDOW_INIT_HEIGHT;
     int controlPanelWidth = WINDOW_INIT_WIDTH - imageDimension;
 
-    SetTraceLogLevel (LOG_WARNING | LOG_ERROR);
+    SetTraceLogLevel (LOG_WARNING | LOG_ERROR | LOG_DEBUG);
     InitWindow(WINDOW_INIT_WIDTH, WINDOW_INIT_HEIGHT, "HyperFractal Mathematical Visualiser");
     SetWindowState (FLAG_WINDOW_RESIZABLE);
     int minHeight = std::max (256, CONTROL_MIN_HEIGHT);
     SetWindowMinSize(minHeight+CONTROL_MIN_WIDTH, minHeight);  
     SetTargetFPS(30);
+    ConfigureGuiStyle ();
+    Font font = GuiGetFont ();
 
-    long double start_zoom = 1.0; //1.477892e+03;
-    long double start_x_offset = 0.0;//-1.4112756161337429028227244409698926119745010510087013244628906250000000;
+
+    long double start_zoom = /*1.0;*/ 1.477892e+03;
+    long double start_x_offset = /*0.0;*/-1.4112756161337429028227244409698926119745010510087013244628906250000000;
     long double start_y_offset = 0.0;
 
     string dialogText = "";
@@ -154,7 +213,7 @@ int gui_main () {
         if (buttonStates[3]) std::cout << "Save Image." << std::endl;
         if (buttonStates[4]) std::cout << "Save Render State." << std::endl;
         if (buttonStates[5]) std::cout << "Load Render State." << std::endl;
-        if ((buttonStates[6] || IsKeyDown(KEY_UP)) && !isRendering) {// TODO: Fix moving bug at high zoom
+        if ((buttonStates[6] || IsKeyDown(KEY_UP)) && !isRendering) {
             hm->offset_y += MOVE_STEP_FACTOR/hm->zoom;
             lowres_hm->offset_y += MOVE_STEP_FACTOR/hm->zoom;
             isOutdatedRender = true;
@@ -234,7 +293,10 @@ int gui_main () {
         controlPanelWidth = GetScreenWidth()-imageDimension;
         if (!isRendering) {hm->resolution = imageDimension;}
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        Color bgcol = GetColor (GuiGetStyle(00, BACKGROUND_COLOR));
+        ClearBackground (RED);
+        ClearBackground(bgcol);
+        
 
         // Draw the rendered image      
         Vector2 v {0,0};
@@ -257,21 +319,21 @@ int gui_main () {
         buttonStates[3] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth, BUTTON_HEIGHT}, "Save Image");
         // Draw render state load/save buttons
         buttonOffset++;
-        buttonStates[4] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Save Render State");
-        buttonStates[5] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Load Render State");
+        buttonStates[4] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "#05#Save Render State");
+        buttonStates[5] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, GuiIconText(RICON_CLOCK, "Load Render State"));
         // Draw movement navigation buttons
         buttonOffset++;
-        buttonStates[6] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-BUTTON_HEIGHT)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, GuiIconText(RICON_ARROW_TOP_FILL, "up"));
+        buttonStates[6] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-BUTTON_HEIGHT)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, "up");
         buttonOffset++;
-        buttonStates[7] = GuiButton((Rectangle){(float)imageDimension+(((float)controlPanelWidth)/2)-BUTTON_HEIGHT, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, GuiIconText(RICON_ARROW_LEFT_FILL, "left"));
-        buttonStates[8] = GuiButton((Rectangle){(float)imageDimension+(((float)controlPanelWidth)/2), BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, GuiIconText(RICON_ARROW_RIGHT_FILL, "right"));
+        buttonStates[7] = GuiButton((Rectangle){(float)imageDimension+(((float)controlPanelWidth)/2)-BUTTON_HEIGHT, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, "left");
+        buttonStates[8] = GuiButton((Rectangle){(float)imageDimension+(((float)controlPanelWidth)/2), BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, "right");
         buttonOffset++;
-        buttonStates[9] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-BUTTON_HEIGHT)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, GuiIconText(RICON_ARROW_BOTTOM_FILL, "down"));
+        buttonStates[9] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-BUTTON_HEIGHT)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, "down");
         buttonOffset++;
         
+        // Custom equation input box
         bool res = GuiTextBox ((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, equationTmp.data(), 1, false);
         int key = GetCharPressed();
-        // TODO: Fix intermediate/invalid equation
         if (key == 122 || key == 99 || (key >= 48 && key <= 57) || key == 94 || (key >= 40 && key <= 43) || key == 45 || key == 46 || key == 47) {
             equationTmp += (char)key;
             std::cout << equationTmp << std::endl;
@@ -311,7 +373,7 @@ int gui_main () {
             sleepcp (1);
         }
 
-
+        // Drawing the info dialog
         if (dialogText != "") {
             int textwidth = MeasureText(dialogText.c_str(), GetFontDefault().baseSize);
             DrawRectangle (0, 0, GetScreenWidth(), GetScreenHeight(), (Color){200, 200, 200, 128});
