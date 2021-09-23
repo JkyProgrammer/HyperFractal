@@ -1,4 +1,5 @@
 #include <complex>
+#include <chrono>
 
 #ifndef FRACTAL_H
 #define FRACTAL_H
@@ -8,6 +9,15 @@ using namespace std;
 class equation;
 
 bool is_infinity (complex<long double> comp);
+
+struct timing_data {
+    chrono::microseconds d_compute;
+    chrono::microseconds d_isinf;
+    chrono::microseconds d_math;
+    chrono::microseconds d_evaluate;
+    chrono::microseconds d_get;
+    chrono::microseconds d_set;
+};
 
 class value {
 public:
@@ -34,7 +44,7 @@ public:
     int operation;
 
     complex<long double> compute (complex<long double> z, complex<long double> c);
-    int evaluate (complex<long double> c, int limit);
+    int evaluate (complex<long double> c, int limit, timing_data *d_time);
 
     equation (value aVal, value bVal, int op);
     equation ();

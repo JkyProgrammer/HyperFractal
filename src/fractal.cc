@@ -1,8 +1,11 @@
 #include "fractal.h"
 #include <iostream>
+#include <chrono>
+using namespace std::chrono;
 
 bool is_infinity (complex<long double> comp) {
-    return pow(comp.real(),2.0) + pow(comp.imag(),2.0) > (long double)2;
+    return abs(comp.real()) + abs(comp.imag()) > (long double)2;
+    //return pow(comp.real(),2.0) + pow(comp.imag(),2.0) > (long double)4;
 }
 
 value::value (complex<long double> c) {
@@ -34,12 +37,12 @@ complex<long double> equation::compute (complex<long double> z, complex<long dou
     complex<long double> v2;
     if (a.type == 0) v1 = a.cVal;
     else if (a.type == 1) v1 = a.lVal ? z : c;
-    else if (a.eVal != NULL) v1 = a.eVal->compute(z, c);
+    else if (a.type == 2) v1 = a.eVal->compute(z, c);
     else return 0;
 
     if (b.type == 0) v2 = b.cVal;
     else if (b.type == 1) v2 = b.lVal ? z : c;
-    else if (b.eVal != NULL) v2 = b.eVal->compute(z, c);
+    else if (b.type == 2) v2 = b.eVal->compute(z, c);
     else return 0;
 
     complex<long double> rv = 0;
@@ -58,17 +61,30 @@ complex<long double> equation::compute (complex<long double> z, complex<long dou
         break;
     case 4:
         rv = pow(v1, v2);
+        break;
     }
     return rv;
 }
 using namespace std;
-int equation::evaluate (complex<long double> c, int limit) {
+int equation::evaluate (complex<long double> c, int limit, timing_data *d_time) {
+    microseconds d_compute = microseconds(0);
+    microseconds d_isinf = microseconds(0);
+
     complex<long double> last = c;
     int depth = 0;
-    while (!is_infinity(last) && (depth < limit)) {
+    while (depth < limit) {
+        auto t_a = high_resolution_clock::now();
         last = compute (last, c);
         depth++;
+        auto t_b = high_resolution_clock::now();
+        bool b = is_infinity (last);
+        auto t_c = high_resolution_clock::now();
+        d_compute += duration_cast<microseconds> (t_b-t_a);
+        d_isinf += duration_cast<microseconds> (t_c-t_b);
+        if (b) break;
     }
+    d_time->d_compute += d_compute;
+    d_time->d_isinf += d_isinf;
     return depth;
 }
 

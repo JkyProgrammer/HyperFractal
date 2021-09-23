@@ -15,7 +15,7 @@
 #define WINDOW_INIT_HEIGHT 450
 #define BUTTON_HEIGHT 40
 #define ELEMENT_NUM_VERTICAL 10
-#define BUTTON_NUM_TOTAL 10
+#define BUTTON_NUM_TOTAL 11
 #define CONTROL_MIN_WIDTH 250
 #define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL
 
@@ -26,7 +26,7 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
     for (int x = 0; x < hm->resolution; x++) {
         for (int y = 0; y < hm->resolution; y++) {
             int v = hm->img->get(x,y);
-            pixels[(y*hm->resolution)+x] = (v == hm->eval_limit) ? BLACK : ColorFromHSV(v, 0.5, 0.75);
+            pixels[(y*hm->resolution)+x] = (v == hm->eval_limit) ? BLACK : ColorFromHSV(v * 2, 0.5, 0.75);
             if (hm->img->completed[(y*hm->resolution)+x] != 2) pixels[(y*hm->resolution)+x].a = 0;
         }
     }
@@ -41,14 +41,20 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
 }
 
 // TODO: Implement existing buttons
-// TODO: Fix movement controls
-// TODO: Add equation presets
+// TODO: Add equation presets (CURRENT)
 // TODO: Add numerical zoom/offset inputs (TF)
 // TODO: Worker threads & eval limit controls (TF)
 // TODO: Benchmark everything
 
+#define EQ_MANDELBROT 1
+#define EQ_JULIA_1 2
+#define EQ_JULIA_2 3
+#define EQ_RECIPROCAL 4
+#define EQ_POLY 5
+#define EQ_ZPOWER 6
+
 void ConfigureGuiStyle () {
-    // This function implements the 'candy' interface style provided by raygui's documentation.
+    // This function implements the 'cyber' interface style provided by raygui's documentation.
     const char* stylesheet = R"(p 00 00 0x2f7486ff    DEFAULT_BORDER_COLOR_NORMAL
 p 00 01 0x024658ff    DEFAULT_BASE_COLOR_NORMAL
 p 00 02 0x51bfd3ff    DEFAULT_TEXT_COLOR_NORMAL
@@ -61,8 +67,8 @@ p 00 08 0xd86f36ff    DEFAULT_TEXT_COLOR_PRESSED
 p 00 09 0x134b5aff    DEFAULT_BORDER_COLOR_DISABLED
 p 00 10 0x02313dff    DEFAULT_BASE_COLOR_DISABLED
 p 00 11 0x17505fff    DEFAULT_TEXT_COLOR_DISABLED
-p 00 16 0x0000000e    DEFAULT_TEXT_SIZE
-p 00 17 0x00000000    DEFAULT_TEXT_SPACING
+p 00 16 0x00000012    DEFAULT_TEXT_SIZE
+p 00 17 0x00000001    DEFAULT_TEXT_SPACING
 p 00 18 0x81c0d0ff    DEFAULT_LINE_COLOR
 p 00 19 0x00222bff    DEFAULT_BACKGROUND_COLOR)";
     int offset = 0;
@@ -75,9 +81,6 @@ p 00 19 0x00222bff    DEFAULT_BACKGROUND_COLOR)";
             stylePointIndex++;
         } else if (stylesheet[offset] == '\n' || stylesheet[offset] == '\0') {
             GuiSetStyle (stoi(stylePointControl), stoi(stylePointProperty), stol(stylePointValue, nullptr, 16));
-            cout << stoi(stylePointControl) << endl;
-            cout << stoi(stylePointProperty) << endl;
-            cout << stol(stylePointValue, NULL, 16) << endl;
             stylePointControl = "";
             stylePointProperty = "";
             stylePointValue = "";
@@ -102,6 +105,10 @@ p 00 19 0x00222bff    DEFAULT_BACKGROUND_COLOR)";
     GuiUpdateStyleComplete();
 }
 
+string equationPreset () {
+    // TODO:
+}
+
 int gui_main () {
     hfractal_main* lowres_hm = new hfractal_main();
     hfractal_main* hm = new hfractal_main();
@@ -116,7 +123,6 @@ int gui_main () {
     SetWindowMinSize(minHeight+CONTROL_MIN_WIDTH, minHeight);  
     SetTargetFPS(30);
     ConfigureGuiStyle ();
-    Font font = GuiGetFont ();
 
 
     long double start_zoom = /*1.0;*/ 1.477892e+03;
@@ -124,11 +130,12 @@ int gui_main () {
     long double start_y_offset = 0.0;
 
     string dialogText = "";
+    int equationPreset = 0;
 
     // Configure full resolution renderer
     hm->resolution = imageDimension;
     hm->eq = string("(z^2)+c");
-    hm->eval_limit = 2000;
+    hm->eval_limit = 800;
     hm->worker_threads = 12;
     hm->zoom = start_zoom;
     hm->offset_x = start_x_offset;
@@ -137,8 +144,8 @@ int gui_main () {
     // Configure preivew renderer
     lowres_hm->resolution = 64;
     lowres_hm->eq = string("(z^2)+c");
-    lowres_hm->eval_limit = 500;
-    lowres_hm->worker_threads = 2;
+    lowres_hm->eval_limit = 100;
+    lowres_hm->worker_threads = 1;
     lowres_hm->zoom = start_zoom;
     lowres_hm->offset_x = start_x_offset;
     lowres_hm->offset_y = start_y_offset;
@@ -285,7 +292,6 @@ int gui_main () {
                 tex = LoadTextureFromImage(bufferImage);
             }
         }
-        
 
         // TODO: Help/instructions
 
@@ -319,8 +325,8 @@ int gui_main () {
         buttonStates[3] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth, BUTTON_HEIGHT}, "Save Image");
         // Draw render state load/save buttons
         buttonOffset++;
-        buttonStates[4] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "#05#Save Render State");
-        buttonStates[5] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, GuiIconText(RICON_CLOCK, "Load Render State"));
+        buttonStates[4] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Save Render State");
+        buttonStates[5] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Load Render State");
         // Draw movement navigation buttons
         buttonOffset++;
         buttonStates[6] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-BUTTON_HEIGHT)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, "up");
@@ -334,7 +340,7 @@ int gui_main () {
         // Custom equation input box
         bool res = GuiTextBox ((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, equationTmp.data(), 1, false);
         int key = GetCharPressed();
-        if (key == 122 || key == 99 || (key >= 48 && key <= 57) || key == 94 || (key >= 40 && key <= 43) || key == 45 || key == 46 || key == 47) {
+        if ((key == 122 || key == 99 || (key >= 48 && key <= 57) || key == 94 || (key >= 40 && key <= 43) || key == 45 || key == 46 || key == 47 || key == 'i') && !isRendering) {
             equationTmp += (char)key;
             std::cout << equationTmp << std::endl;
             hm->eq = equationTmp;
@@ -345,8 +351,7 @@ int gui_main () {
                 consoleText = "Outdated!";
                 imageNeedsUpdate = true;
             }
-            sleepcp (1);
-        } else if (GetKeyPressed () == KEY_BACKSPACE) {
+        } else if (GetKeyPressed () == KEY_BACKSPACE && !isRendering) {
             equationTmp.pop_back();
             std::cout << equationTmp << std::endl;
             hm->eq = equationTmp;
@@ -357,21 +362,10 @@ int gui_main () {
                 consoleText = "Outdated!";
                 imageNeedsUpdate = true;
             }
-            sleepcp (1);
         }
-        if (GetKeyPressed () == KEY_ENTER) {
-            equationTmp.pop_back();
-            std::cout << equationTmp << std::endl;
-            hm->eq = equationTmp;
-            lowres_hm->eq = equationTmp;
-            if (lowres_hm->generateImage (true)) consoleText = "Invalid equation input";
-            else {
-                isOutdatedRender = true;
-                consoleText = "Outdated!";
-                imageNeedsUpdate = true;
-            }
-            sleepcp (1);
-        }
+        // Equation preset loading
+        buttonStates[10] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Equation Presets");
+        
 
         // Drawing the info dialog
         if (dialogText != "") {
