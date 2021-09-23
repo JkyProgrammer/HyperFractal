@@ -5,23 +5,21 @@
 #include <ostream>
 
 void image::set(int x, int y, uint16_t p) {
-    mut.lock();
-    if (x >= width || x < 0) { mut.unlock(); return; }
-    if (y >= height || y < 0) { mut.unlock(); return; }
     int offset = ((y*width)+x);
     rgb_image[offset] = p;
     completed[offset] = 2;
+    //mut.lock(); NOTE: DISABLED FOR PERFORMANCE
     c_ind++;
-    mut.unlock();
+    //mut.unlock();
 }
 
 uint16_t image::get(int x, int y) {
-    mut.lock();
-    if (x >= width || x < 0) { mut.unlock(); return 0; }
-    if (y >= height || y < 0) { mut.unlock(); return 0; }
-    uint16_t v = rgb_image[(y*width)+x];
-    mut.unlock();
-    return v;
+    //mut.lock();
+    //if (x >= width || x < 0) { mut.unlock(); return 0; }
+    //if (y >= height || y < 0) { mut.unlock(); return 0; }
+    //uint16_t v = rgb_image[(y*width)+x];
+    //mut.unlock();
+    return rgb_image[(y*width)+x];
 }
 
 image::image(int w, int h) : width(w), height(h), c_ind(0) {
@@ -60,9 +58,15 @@ image::~image () {
 }
 
 int image::get_uncompleted () {
-    mut.lock();
-    for (int i = c_ind; i < height*width; i++) if (completed[i] == 0) { completed[i] = 1; mut.unlock(); return i; }
-    mut.unlock();
+    //mut.lock();
+    for (int i = c_ind; i < height*width; i++) {
+        if (completed[i] == 0) {
+            completed[i] = 1;
+            //mut.unlock();
+            return i;
+        }
+    }
+    //mut.unlock();
     return -1;
 }
 
