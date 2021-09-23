@@ -4,7 +4,7 @@
 using namespace std::chrono;
 
 bool is_infinity (complex<long double> comp) {
-    return abs(comp.real()) + abs(comp.imag()) > (long double)2;
+    return (abs(comp.real()) + abs(comp.imag())) >= 2;
     //return pow(comp.real(),2.0) + pow(comp.imag(),2.0) > (long double)4;
 }
 
@@ -35,15 +35,35 @@ value::value () {
 complex<long double> equation::compute (complex<long double> z, complex<long double> c) {
     complex<long double> v1;
     complex<long double> v2;
-    if (a.type == 0) v1 = a.cVal;
-    else if (a.type == 1) v1 = a.lVal ? z : c;
-    else if (a.type == 2) v1 = a.eVal->compute(z, c);
-    else return 0;
-
-    if (b.type == 0) v2 = b.cVal;
-    else if (b.type == 1) v2 = b.lVal ? z : c;
-    else if (b.type == 2) v2 = b.eVal->compute(z, c);
-    else return 0;
+    switch (a.type) {
+    case 0:
+        v1 = a.cVal;
+        break;
+    case 1:
+        v1 = a.lVal ? z : c;
+        break;
+    case 2:
+        v1 = a.eVal->compute(z, c);
+        break;
+    default:
+        return 0;
+        break;
+    }
+    
+    switch (b.type) {
+    case 0:
+        v2 = b.cVal;
+        break;
+    case 1:
+        v2 = b.lVal ? z : c;
+        break;
+    case 2:
+        v2 = b.eVal->compute(z, c);
+        break;
+    default:
+        return 0;
+        break;
+    }
 
     complex<long double> rv = 0;
     switch (operation) {
@@ -65,6 +85,7 @@ complex<long double> equation::compute (complex<long double> z, complex<long dou
     }
     return rv;
 }
+
 using namespace std;
 int equation::evaluate (complex<long double> c, int limit, timing_data *d_time) {
     microseconds d_compute = microseconds(0);
