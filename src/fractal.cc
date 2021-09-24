@@ -4,8 +4,8 @@
 using namespace std::chrono;
 
 bool is_infinity (complex<long double> comp) {
-    return (abs(comp.real()) - abs(comp.imag())) >= 2;
-    //return pow(comp.real(),2.0) + pow(comp.imag(),2.0) > (long double)4;
+     //return (abs(comp.real()) - abs(comp.imag())) >= 2;
+    return pow(comp.real(),2.0) + pow(comp.imag(),2.0) > (long double)4;
 }
 
 value::value (complex<long double> c) {
