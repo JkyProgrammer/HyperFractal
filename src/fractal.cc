@@ -4,8 +4,8 @@
 using namespace std::chrono;
 
 bool is_infinity (complex<long double> comp) {
-     //return (abs(comp.real()) - abs(comp.imag())) >= 2;
-    return pow(comp.real(),2.0) + pow(comp.imag(),2.0) > (long double)4;
+    return (abs(comp.real()) + abs(comp.imag())) >= 2;
+    //return pow(comp.real(),2.0) + pow(comp.imag(),2.0) > (long double)4;
 }
 
 value::value (complex<long double> c) {
@@ -88,24 +88,24 @@ complex<long double> equation::compute (complex<long double> z, complex<long dou
 
 using namespace std;
 int equation::evaluate (complex<long double> c, int limit, timing_data *d_time) {
-    microseconds d_compute = microseconds(0);
-    microseconds d_isinf = microseconds(0);
+    //microseconds d_compute = microseconds(0);
+    //microseconds d_isinf = microseconds(0);
 
     complex<long double> last = c;
     int depth = 0;
     while (depth < limit) {
-        auto t_a = high_resolution_clock::now();
+        //auto t_a = high_resolution_clock::now();
         last = compute (last, c);
         depth++;
-        auto t_b = high_resolution_clock::now();
+        //auto t_b = high_resolution_clock::now();
         bool b = is_infinity (last);
-        auto t_c = high_resolution_clock::now();
-        d_compute += duration_cast<microseconds> (t_b-t_a);
-        d_isinf += duration_cast<microseconds> (t_c-t_b);
+        //auto t_c = high_resolution_clock::now();
+        //d_compute += duration_cast<microseconds> (t_b-t_a);
+        //d_isinf += duration_cast<microseconds> (t_c-t_b);
         if (b) break;
     }
-    d_time->d_compute += d_compute;
-    d_time->d_isinf += d_isinf;
+    //d_time->d_compute += d_compute;
+    //d_time->d_isinf += d_isinf;
     return depth;
 }
 

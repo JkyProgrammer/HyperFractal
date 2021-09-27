@@ -44,7 +44,6 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
 // TODO: Add equation presets (CURRENT)
 // TODO: Add numerical zoom/offset inputs (TF)
 // TODO: Worker threads & eval limit controls (TF)
-// TODO: Benchmark everything
 
 #define EQ_MANDELBROT 1
 #define EQ_JULIA_1 2
