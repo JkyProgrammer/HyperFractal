@@ -2,6 +2,7 @@
 #include <math.h>
 #include <algorithm>
 #include <iostream>
+#include <thread>
 
 #define RAYGUI_IMPLEMENTATION
 #define RAYGUI_SUPPORT_ICONS
@@ -13,9 +14,9 @@
 #define MOVE_STEP_FACTOR 0.1
 #define WINDOW_INIT_WIDTH 800
 #define WINDOW_INIT_HEIGHT 450
-#define BUTTON_HEIGHT 40
+#define BUTTON_HEIGHT 30
 #define ELEMENT_NUM_VERTICAL 10
-#define BUTTON_NUM_TOTAL 11
+#define BUTTON_NUM_TOTAL 12
 #define CONTROL_MIN_WIDTH 250
 #define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL
 
@@ -40,17 +41,27 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
     return img;
 }
 
+// FIXME: Crash when fullscreening
+// DONE: Buttons stop responding sometimes - was a multithreading issue on the image
+
 // TODO: Implement existing buttons
 // TODO: Add equation presets (CURRENT)
 // TODO: Add numerical zoom/offset inputs (TF)
-// TODO: Worker threads & eval limit controls (TF)
+// TODO: Eval limit controls (TF)
+// TODO: Better equation input?
+// TODO: Help/instructions
+// TODO: Add comments to all the code
 
-#define EQ_MANDELBROT 1
-#define EQ_JULIA_1 2
-#define EQ_JULIA_2 3
-#define EQ_RECIPROCAL 4
-#define EQ_POLY 5
-#define EQ_ZPOWER 6
+// TODO: Remove all debugging related stuff
+
+// CONGRATS! We're running a 12.21s benchmark vs 37.00s from the Java version
+
+#define EQ_MANDELBROT 1 // "(z^2)+c"
+#define EQ_JULIA_1 2 // "(z^2)+(0.285+0.01i)"
+#define EQ_JULIA_2 3 // "(z^2)+(-0.70176-0.3842i)"
+#define EQ_RECIPROCAL 4 // "1/((z^2)+c)"
+#define EQ_ZPOWER 5 // "(z^z)+(c-0.5)"
+#define EQ_BARS 6 // "z^(c^2)"
 
 void ConfigureGuiStyle () {
     // This function implements the 'cyber' interface style provided by raygui's documentation.
@@ -106,12 +117,15 @@ p 00 19 0x00222bff    DEFAULT_BACKGROUND_COLOR)";
 
 string equationPreset () {
     // TODO:
+    cout << "debug" << endl;
 }
 
 int gui_main () {
+    // Initialise the renderers
     hfractal_main* lowres_hm = new hfractal_main();
     hfractal_main* hm = new hfractal_main();
 
+    const auto thread_count = std::thread::hardware_concurrency ();
     int imageDimension = WINDOW_INIT_HEIGHT;
     int controlPanelWidth = WINDOW_INIT_WIDTH - imageDimension;
 
@@ -123,28 +137,28 @@ int gui_main () {
     SetTargetFPS(30);
     ConfigureGuiStyle ();
 
-
-    long double start_zoom = /*1.0;*/ 1.477892e+03;
-    long double start_x_offset = /*0.0;*/-1.4112756161337429028227244409698926119745010510087013244628906250000000;
+    long double start_zoom = 1.0; //1.477892e+03;
+    long double start_x_offset = 0.0; //-1.4112756161337429028227244409698926119745010510087013244628906250000000;
     long double start_y_offset = 0.0;
 
     string dialogText = "";
+    string equationDefault = "(1/z)+c";
     int equationPreset = 0;
 
     // Configure full resolution renderer
     hm->resolution = imageDimension;
-    hm->eq = string("(z^2)+c");
-    hm->eval_limit = 800;
-    hm->worker_threads = 12;
+    hm->eq = equationDefault;
+    hm->eval_limit = 400;
+    hm->worker_threads = thread_count;
     hm->zoom = start_zoom;
     hm->offset_x = start_x_offset;
     hm->offset_y = start_y_offset;
 
     // Configure preivew renderer
     lowres_hm->resolution = 64;
-    lowres_hm->eq = string("(z^2)+c");
-    lowres_hm->eval_limit = 100;
-    lowres_hm->worker_threads = 1;
+    lowres_hm->eq = equationDefault;
+    lowres_hm->eval_limit = 200;
+    lowres_hm->worker_threads = thread_count/2;
     lowres_hm->zoom = start_zoom;
     lowres_hm->offset_x = start_x_offset;
     lowres_hm->offset_y = start_y_offset;
@@ -161,26 +175,26 @@ int gui_main () {
 
     // Generate the initial preview render
     lowres_hm->generateImage(true);
-    string equationTmp = "(z^2)+c";
+    string equationTmp = equationDefault;
     while (!WindowShouldClose()) {
         if (dialogText == "") {
-        // Detect clicking to recenter
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !isRendering) {
-            Vector2 mpos = GetMousePosition();
-            if (mpos.x <= imageDimension && mpos.y <= imageDimension) {
-                long double changeInX = (long double)((mpos.x/(imageDimension/2))-1)/hm->zoom;
-                long double changeInY = (long double)((mpos.y/(imageDimension/2))-1)/hm->zoom;
-                lowres_hm->offset_x += changeInX;
-                lowres_hm->offset_y -= changeInY;
-                hm->offset_x += changeInX;
-                hm->offset_y -= changeInY;
-                isOutdatedRender = true;
-                consoleText = "Outdated!";
-                imageNeedsUpdate = true;
-                lowres_hm->generateImage (true);
-                sleepcp (1);
+            // Detect clicking to recenter
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !isRendering) {
+                Vector2 mpos = GetMousePosition();
+                if (mpos.x <= imageDimension && mpos.y <= imageDimension) {
+                    long double changeInX = (long double)((mpos.x/(imageDimension/2))-1)/hm->zoom;
+                    long double changeInY = (long double)((mpos.y/(imageDimension/2))-1)/hm->zoom;
+                    lowres_hm->offset_x += changeInX;
+                    lowres_hm->offset_y -= changeInY;
+                    hm->offset_x += changeInX;
+                    hm->offset_y -= changeInY;
+                    isOutdatedRender = true;
+                    consoleText = "Outdated!";
+                    imageNeedsUpdate = true;
+                    lowres_hm->generateImage (true);
+                    sleepcp (1);
+                }
             }
-        }
         } else {
             GuiLock();
         }
@@ -190,11 +204,16 @@ int gui_main () {
             std::cout << "Rerendering..." << std::endl;
             isRendering = true;
             lowres_hm->generateImage(true);
-            isOutdatedRender = true;
-            consoleText = "Rendering...";
-            hm->generateImage(false);
-            imageNeedsUpdate = true;
-            sleepcp (1);
+            if (lowres_hm->main_equation != NULL) {
+                isOutdatedRender = true;
+                consoleText = "Rendering...";
+                hm->generateImage(false);
+                imageNeedsUpdate = true;
+                sleepcp (1);
+            } else {
+                consoleText = "Invalid equation!";
+                isRendering = false;
+            }
         }
         if (buttonStates[1] && !isRendering) {
             if (lowres_hm->zoom <= SCALE_DEPTH_LIMIT) {
@@ -216,9 +235,18 @@ int gui_main () {
             lowres_hm->generateImage (true);
             sleepcp (1);
         }
-        if (buttonStates[3]) std::cout << "Save Image." << std::endl;
-        if (buttonStates[4]) std::cout << "Save Render State." << std::endl;
-        if (buttonStates[5]) std::cout << "Load Render State." << std::endl;
+        if (buttonStates[11] && !isRendering) {
+            isOutdatedRender = true;
+            consoleText = "Outdated!";
+            imageNeedsUpdate = true;
+            lowres_hm->zoom = 1.0;
+            hm->zoom = 1.0;
+            lowres_hm->generateImage (true);
+            sleepcp (1);
+        }
+        if (buttonStates[3] && !isRendering) std::cout << "Save Image." << std::endl;
+        if (buttonStates[4] && !isRendering) std::cout << "Save Render State." << std::endl;
+        if (buttonStates[5] && !isRendering) std::cout << "Load Render State." << std::endl;
         if ((buttonStates[6] || IsKeyDown(KEY_UP)) && !isRendering) {
             hm->offset_y += MOVE_STEP_FACTOR/hm->zoom;
             lowres_hm->offset_y += MOVE_STEP_FACTOR/hm->zoom;
@@ -292,8 +320,6 @@ int gui_main () {
             }
         }
 
-        // TODO: Help/instructions
-
         imageDimension = std::min(GetScreenWidth()-CONTROL_MIN_WIDTH, GetScreenHeight());
         controlPanelWidth = GetScreenWidth()-imageDimension;
         if (!isRendering) {hm->resolution = imageDimension;}
@@ -317,8 +343,9 @@ int gui_main () {
         GuiProgressBar ((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth, BUTTON_HEIGHT}, "", "", percent, 0, 100);
         // Draw zoom buttons
         buttonOffset++;
-        buttonStates[1] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Zoom In");
-        buttonStates[2] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Zoom Out");
+        buttonStates[1] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/3, BUTTON_HEIGHT}, "Zoom In");
+        buttonStates[11] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/3, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/3, BUTTON_HEIGHT}, "Reset Zoom");
+        buttonStates[2] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/(3.0f/2.0f), BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/3, BUTTON_HEIGHT}, "Zoom Out");
         // Draw save image button
         buttonOffset++;
         buttonStates[3] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth, BUTTON_HEIGHT}, "Save Image");
@@ -328,12 +355,12 @@ int gui_main () {
         buttonStates[5] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Load Render State");
         // Draw movement navigation buttons
         buttonOffset++;
-        buttonStates[6] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-BUTTON_HEIGHT)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, "up");
+        buttonStates[6] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-40)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)40, BUTTON_HEIGHT}, "up");
         buttonOffset++;
-        buttonStates[7] = GuiButton((Rectangle){(float)imageDimension+(((float)controlPanelWidth)/2)-BUTTON_HEIGHT, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, "left");
-        buttonStates[8] = GuiButton((Rectangle){(float)imageDimension+(((float)controlPanelWidth)/2), BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, "right");
+        buttonStates[7] = GuiButton((Rectangle){(float)imageDimension+(((float)controlPanelWidth)/2)-40, BUTTON_HEIGHT*(float)buttonOffset, (float)40, BUTTON_HEIGHT}, "left");
+        buttonStates[8] = GuiButton((Rectangle){(float)imageDimension+(((float)controlPanelWidth)/2), BUTTON_HEIGHT*(float)buttonOffset, (float)40, BUTTON_HEIGHT}, "right");
         buttonOffset++;
-        buttonStates[9] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-BUTTON_HEIGHT)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)BUTTON_HEIGHT, BUTTON_HEIGHT}, "down");
+        buttonStates[9] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-40)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)40, BUTTON_HEIGHT}, "down");
         buttonOffset++;
         
         // Custom equation input box
@@ -350,7 +377,7 @@ int gui_main () {
                 consoleText = "Outdated!";
                 imageNeedsUpdate = true;
             }
-        } else if (GetKeyPressed () == KEY_BACKSPACE && !isRendering) {
+        } else if (GetKeyPressed () == KEY_BACKSPACE && !isRendering && equationTmp.length() > 0) {
             equationTmp.pop_back();
             std::cout << equationTmp << std::endl;
             hm->eq = equationTmp;

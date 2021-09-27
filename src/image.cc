@@ -8,7 +8,7 @@ void image::set(int x, int y, uint16_t p) {
     int offset = ((y*width)+x);
     rgb_image[offset] = p;
     completed[offset] = 2;
-    //mut.lock(); NOTE: DISABLED FOR PERFORMANCE
+    //mut.lock(); // ~NOTE: DISABLED FOR PERFORMANCE~
     c_ind++;
     //mut.unlock();
 }
@@ -58,15 +58,16 @@ image::~image () {
 }
 
 int image::get_uncompleted () {
-    //mut.lock();
+    mut.lock();
     for (int i = c_ind; i < height*width; i++) {
         if (completed[i] == 0) {
+            
             completed[i] = 1;
-            //mut.unlock();
+            mut.unlock();
             return i;
         }
     }
-    //mut.unlock();
+    mut.unlock();
     return -1;
 }
 
