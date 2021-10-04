@@ -9,19 +9,25 @@
 #include "../lib/raygui.h"
 #include "../lib/ricons.h"
 
-#define SCALE_STEP_FACTOR 1.5
-#define SCALE_DEPTH_LIMIT 1.0e15
-#define MOVE_STEP_FACTOR 0.1
-#define WINDOW_INIT_WIDTH 800
-#define WINDOW_INIT_HEIGHT 450
-#define BUTTON_HEIGHT 30
-#define ELEMENT_NUM_VERTICAL 10
-#define BUTTON_NUM_TOTAL 12
-#define CONTROL_MIN_WIDTH 250
+#define SCALE_STEP_FACTOR 1.5       // Factor by which scaling changes
+#define SCALE_DEPTH_LIMIT 1.0e15    // Limit to prevent user from going too deep due to limited precision
+#define MOVE_STEP_FACTOR 0.1        // Factor by which position changes
+#define WINDOW_INIT_WIDTH 900       // Initial window - width
+#define WINDOW_INIT_HEIGHT 550      //                - height
+#define BUTTON_HEIGHT 30            // Height of a single button in the interface
+#define ELEMENT_NUM_VERTICAL 10     // Number of vertical elements
+#define BUTTON_NUM_TOTAL 12         // Total number of buttons in the interface
+#define CONTROL_MIN_WIDTH 400       // Minimum width of the control panel
 #define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL
 
 using namespace std;
 
+/**
+ * @brief Convert the result of a render (B-W map) into a coloured image
+ * 
+ * @param hm Hyperfractal instance from which to extract the image
+ * @return Image 
+ */
 Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vectors
     Color *pixels = (Color *)malloc((hm->resolution)*(hm->resolution)*sizeof(Color));
     for (int x = 0; x < hm->resolution; x++) {
@@ -44,13 +50,13 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
 // FIXME: Crash when fullscreening
 // DONE: Buttons stop responding sometimes - was a multithreading issue on the image
 
-// TODO: Implement existing buttons
-// TODO: Add equation presets (CURRENT)
+// TODO: Add comments to all the code (CURRENT)
+// TODO: Implement existing buttons (CURRENT)
 // TODO: Add numerical zoom/offset inputs (TF)
 // TODO: Eval limit controls (TF)
 // TODO: Better equation input?
 // TODO: Help/instructions
-// TODO: Add comments to all the code
+// TODO: Show position when hovering
 
 // TODO: Remove all debugging related stuff
 
@@ -115,9 +121,29 @@ p 00 19 0x00222bff    DEFAULT_BACKGROUND_COLOR)";
     GuiUpdateStyleComplete();
 }
 
-string equationPreset () {
-    // TODO:
-    cout << "debug" << endl;
+/**
+ * @brief 
+ * 
+ * @param i 
+ * @param t 
+ * @return string 
+ */
+string equationPreset (int i, bool t) {
+    switch (i) {
+    case 1:
+        return t ? "Mandelbrot" : "(z^2)+c";
+    case 2:
+        return t ? "Juila 1" : "(z^2)+(0.285+0.01i)";
+    case 3:
+        return t ? "Julia 2" : "(z^2)+(-0.70176-0.3842i)";
+    case 4:
+        return t ? "Reciprocal" : "1/((z^2)+c)";
+    case 5:
+        return t ? "Z Power" : "(z^z)+(c-0.5)";
+    case 6:
+        return t ? "Bars" : "z^(c^2)";
+    }
+    return "";
 }
 
 int gui_main () {
@@ -142,8 +168,7 @@ int gui_main () {
     long double start_y_offset = 0.0;
 
     string dialogText = "";
-    string equationDefault = "(1/z)+c";
-    int equationPreset = 0;
+    string equationDefault = equationPreset (EQ_MANDELBROT, false);
 
     // Configure full resolution renderer
     hm->resolution = imageDimension;
@@ -170,6 +195,9 @@ int gui_main () {
     bool imageNeedsUpdate = true;
     bool isRendering = false; // Indicates that ...
     bool isOutdatedRender = false; // Indicates that the full-res render is out of date (and thus is not showing)
+    bool equationPresetDialog = false;
+    float presetDialogX = 0.0;
+    float presetDialogY = 0.0;
     string consoleText = "Ready.";
     int percent = 0;
 
@@ -389,8 +417,36 @@ int gui_main () {
                 imageNeedsUpdate = true;
             }
         }
+
         // Equation preset loading
+        if (equationPresetDialog) {
+            for (int e = 1; e < 7; e++) {
+                if (
+                    GuiButton((Rectangle){presetDialogX, presetDialogY+(BUTTON_HEIGHT*(e-1)), (float)controlPanelWidth/2, BUTTON_HEIGHT}, equationPreset(e, true).c_str())
+                ) {
+                    equationPresetDialog = false;
+                    equationTmp = equationPreset (e, false);
+                    hm->eq = equationTmp;
+                    lowres_hm->eq = equationTmp;
+                    if (lowres_hm->generateImage (true)) consoleText = "Invalid equation input";
+                    else {
+                        isOutdatedRender = true;
+                        consoleText = "Outdated!";
+                        imageNeedsUpdate = true;
+                    }
+                }
+            }
+            if (GetMouseX() < presetDialogX || GetMouseX() > presetDialogX + (float)controlPanelWidth/2 ||  GetMouseY() < presetDialogY - BUTTON_HEIGHT || GetMouseY() > presetDialogY + (BUTTON_HEIGHT*6)) {
+                equationPresetDialog = false;
+            }
+        }
         buttonStates[10] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Equation Presets");
+        if (buttonStates[10] && !isRendering) {
+            equationPresetDialog = true;
+            presetDialogX = (float)imageDimension+(float)controlPanelWidth/2;
+            presetDialogY = BUTTON_HEIGHT*(float)(buttonOffset+1);
+        }
+
         
 
         // Drawing the info dialog
