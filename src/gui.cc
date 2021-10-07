@@ -15,8 +15,8 @@
 #define WINDOW_INIT_WIDTH 900       // Initial window - width
 #define WINDOW_INIT_HEIGHT 550      //                - height
 #define BUTTON_HEIGHT 30            // Height of a single button in the interface
-#define ELEMENT_NUM_VERTICAL 10     // Number of vertical elements
-#define BUTTON_NUM_TOTAL 12         // Total number of buttons in the interface
+#define ELEMENT_NUM_VERTICAL 12     // Number of vertical elements
+#define BUTTON_NUM_TOTAL 15         // Total number of buttons in the interface
 #define CONTROL_MIN_WIDTH 400       // Minimum width of the control panel
 #define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL
 
@@ -47,16 +47,14 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
     return img;
 }
 
-// FIXME: Crash when fullscreening
+// DONE: Crash when fullscreening
 // DONE: Buttons stop responding sometimes - was a multithreading issue on the image
 
 // TODO: Add comments to all the code (CURRENT)
-// TODO: Implement existing buttons (CURRENT)
+// TODO: Implement existing buttons
 // TODO: Add numerical zoom/offset inputs (TF)
-// TODO: Eval limit controls (TF)
 // TODO: Better equation input?
 // TODO: Help/instructions
-// TODO: Show position when hovering
 
 // TODO: Remove all debugging related stuff
 
@@ -182,7 +180,7 @@ int gui_main () {
     // Configure preivew renderer
     lowres_hm->resolution = 64;
     lowres_hm->eq = equationDefault;
-    lowres_hm->eval_limit = 200;
+    lowres_hm->eval_limit = 300;
     lowres_hm->worker_threads = thread_count/2;
     lowres_hm->zoom = start_zoom;
     lowres_hm->offset_x = start_x_offset;
@@ -193,18 +191,27 @@ int gui_main () {
     Image bufferImage = {}; // Image buffer for the fractal image
     Texture2D tex = {}; // Texture buffer for the fractal image
     bool imageNeedsUpdate = true;
-    bool isRendering = false; // Indicates that ...
+    bool isRendering = false; // Indicates that we're currently rendering the full resolution image (meaning the hm configuration is locked)
     bool isOutdatedRender = false; // Indicates that the full-res render is out of date (and thus is not showing)
-    bool equationPresetDialog = false;
+    bool equationPresetDialog = false; // Is the equation preset dialog enabled
     float presetDialogX = 0.0;
     float presetDialogY = 0.0;
-    string consoleText = "Ready.";
-    int percent = 0;
+    string consoleText = "Ready."; // Text shown on the console text
+    int percent = 0; // Render completion percentage
+    bool showCoords = true; // Indicates whether the coordinates of the mouse cursor in math space are shown
+    bool needsToUpdateResolution = false;
 
     // Generate the initial preview render
     lowres_hm->generateImage(true);
     string equationTmp = equationDefault;
     while (!WindowShouldClose()) {
+        if (IsWindowResized()) {
+            imageDimension = std::min(GetScreenWidth()-CONTROL_MIN_WIDTH, GetScreenHeight());
+            controlPanelWidth = GetScreenWidth()-imageDimension;
+            if (!isRendering) { hm->resolution = imageDimension; cout << "set!" << endl; }
+            else needsToUpdateResolution = true;
+        }
+        
         if (dialogText == "") {
             // Detect clicking to recenter
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !isRendering) {
@@ -227,8 +234,8 @@ int gui_main () {
             GuiLock();
         }
 
-        // Respond to button presses
-        if (buttonStates[0] && !isRendering && !imageNeedsUpdate) {
+        // Render button pressed
+        if ((buttonStates[0] || IsKeyPressed(KEY_ENTER)) && !isRendering && !imageNeedsUpdate) {
             std::cout << "Rerendering..." << std::endl;
             isRendering = true;
             lowres_hm->generateImage(true);
@@ -243,6 +250,8 @@ int gui_main () {
                 isRendering = false;
             }
         }
+
+        // Zoom in button pressed
         if (buttonStates[1] && !isRendering) {
             if (lowres_hm->zoom <= SCALE_DEPTH_LIMIT) {
                 isOutdatedRender = true;
@@ -254,6 +263,8 @@ int gui_main () {
             } else dialogText = "Zoom precision limit reached";
             sleepcp (1);
         }
+        
+        // Zoom out button pressed
         if (buttonStates[2] && !isRendering) {
             isOutdatedRender = true;
             consoleText = "Outdated!";
@@ -263,6 +274,8 @@ int gui_main () {
             lowres_hm->generateImage (true);
             sleepcp (1);
         }
+
+        // Reset zoom button pressed
         if (buttonStates[11] && !isRendering) {
             isOutdatedRender = true;
             consoleText = "Outdated!";
@@ -272,9 +285,12 @@ int gui_main () {
             lowres_hm->generateImage (true);
             sleepcp (1);
         }
+
         if (buttonStates[3] && !isRendering) std::cout << "Save Image." << std::endl;
         if (buttonStates[4] && !isRendering) std::cout << "Save Render State." << std::endl;
         if (buttonStates[5] && !isRendering) std::cout << "Load Render State." << std::endl;
+        
+        // Movement buttons pressed
         if ((buttonStates[6] || IsKeyDown(KEY_UP)) && !isRendering) {
             hm->offset_y += MOVE_STEP_FACTOR/hm->zoom;
             lowres_hm->offset_y += MOVE_STEP_FACTOR/hm->zoom;
@@ -312,6 +328,37 @@ int gui_main () {
             sleepcp (1);
         }
         
+        // Toggle show coordinates button pressed
+        if (buttonStates[12]) {
+            showCoords = !showCoords;
+        }
+
+        // Decrease eval limit button pressed
+        if ((buttonStates[13] || IsKeyDown((int)'[')) && !isRendering && !equationPresetDialog) {
+            hm->eval_limit--;
+            lowres_hm->eval_limit--;
+            isOutdatedRender = true;
+            consoleText = "Outdated!";
+            imageNeedsUpdate = true;
+            lowres_hm->generateImage (true);
+            sleepcp (1);
+        }
+
+        // Increase eval limit button pressed
+        if ((buttonStates[14] || IsKeyDown((int)']')) && !isRendering && !equationPresetDialog) {
+            hm->eval_limit++;
+            lowres_hm->eval_limit++;
+            isOutdatedRender = true;
+            consoleText = "Outdated!";
+            imageNeedsUpdate = true;
+            lowres_hm->generateImage (true);
+            sleepcp (1);
+        }
+        
+        BeginDrawing();
+        Color bgcol = GetColor (GuiGetStyle(00, BACKGROUND_COLOR));
+        ClearBackground(bgcol);
+
         // Image updating code  
         if (imageNeedsUpdate) {
             if (hm->img->is_done() && !isOutdatedRender) {
@@ -321,6 +368,7 @@ int gui_main () {
                 isRendering = false;
                 consoleText = "Rendering done.";
                 tex = LoadTextureFromImage(bufferImage);
+                if (needsToUpdateResolution) { hm->resolution = imageDimension; cout << "set finally!" << endl; }
             } else if (lowres_hm->img->is_done()) {
                 UnloadImage (bufferImage);
                 UnloadTexture (tex);
@@ -340,21 +388,14 @@ int gui_main () {
                 imageNeedsUpdate = true;
                 isOutdatedRender = false;
             } else {
-                Image tmp = convert (hm);
+                Image tmp = convert (hm); // Convert the current render result into an image
+                // Write that over the image buffer
                 ImageDraw (&bufferImage, tmp, (Rectangle){0,0,(float)hm->resolution,(float)hm->resolution}, (Rectangle){0,0,(float)hm->resolution,(float)hm->resolution}, WHITE);
-                UnloadImage (tmp);
-                UnloadTexture (tex);
-                tex = LoadTextureFromImage(bufferImage);
+                UnloadImage (tmp); // Unload the old image
+                UnloadTexture (tex); // Unload the old texture
+                tex = LoadTextureFromImage(bufferImage); // Reinitialise the texture from the image
             }
         }
-
-        imageDimension = std::min(GetScreenWidth()-CONTROL_MIN_WIDTH, GetScreenHeight());
-        controlPanelWidth = GetScreenWidth()-imageDimension;
-        if (!isRendering) {hm->resolution = imageDimension;}
-        BeginDrawing();
-        Color bgcol = GetColor (GuiGetStyle(00, BACKGROUND_COLOR));
-        ClearBackground (RED);
-        ClearBackground(bgcol);
         
 
         // Draw the rendered image      
@@ -390,7 +431,13 @@ int gui_main () {
         buttonOffset++;
         buttonStates[9] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth-40)/2, BUTTON_HEIGHT*(float)buttonOffset, (float)40, BUTTON_HEIGHT}, "down");
         buttonOffset++;
-        
+        buttonStates[10] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Equation Presets");
+        if (buttonStates[10] && !isRendering) {
+            equationPresetDialog = true;
+            presetDialogX = (float)imageDimension+(float)controlPanelWidth/2;
+            presetDialogY = BUTTON_HEIGHT*(float)(buttonOffset+1);
+        }
+
         // Custom equation input box
         bool res = GuiTextBox ((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, equationTmp.data(), 1, false);
         int key = GetCharPressed();
@@ -417,12 +464,28 @@ int gui_main () {
                 imageNeedsUpdate = true;
             }
         }
+        buttonOffset++;
 
-        // Equation preset loading
+        // Coordinate toggle button
+        string b12Text = "Hide coordinates";
+        if (!showCoords) b12Text = "Show coordinates";
+        buttonStates[12] = GuiButton((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth, BUTTON_HEIGHT}, b12Text.c_str());
+        buttonOffset++;
+
+        buttonStates[13] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/4, BUTTON_HEIGHT}, "<");
+        buttonStates[14] = GuiButton((Rectangle){(float)imageDimension+((float)controlPanelWidth/4)*3, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/4, BUTTON_HEIGHT}, ">");
+        char evalLimString[16];
+        sprintf (evalLimString, "%d (%d)", hm->eval_limit, lowres_hm->eval_limit);
+        GuiTextBox ((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, evalLimString, 1, false);
+        buttonOffset++;
+        
+
+        // Draw the equation preset dialog
         if (equationPresetDialog) {
             for (int e = 1; e < 7; e++) {
                 if (
                     GuiButton((Rectangle){presetDialogX, presetDialogY+(BUTTON_HEIGHT*(e-1)), (float)controlPanelWidth/2, BUTTON_HEIGHT}, equationPreset(e, true).c_str())
+                && !isRendering
                 ) {
                     equationPresetDialog = false;
                     equationTmp = equationPreset (e, false);
@@ -440,12 +503,6 @@ int gui_main () {
                 equationPresetDialog = false;
             }
         }
-        buttonStates[10] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Equation Presets");
-        if (buttonStates[10] && !isRendering) {
-            equationPresetDialog = true;
-            presetDialogX = (float)imageDimension+(float)controlPanelWidth/2;
-            presetDialogY = BUTTON_HEIGHT*(float)(buttonOffset+1);
-        }
 
         
 
@@ -458,6 +515,21 @@ int gui_main () {
             GuiUnlock();
             bool close = GuiButton((Rectangle){(float)(GetScreenWidth()-textwidth-10)/2, (float)((GetScreenHeight()-GetFontDefault().baseSize-10)/2)+30, (float)(textwidth+10), (float)(GetFontDefault().baseSize+10)}, "OK");
             if (close) dialogText = "";
+        }
+
+        // Draw coordinates text next to cursor
+        if (dialogText == "" && showCoords && GetMouseX() <= imageDimension && GetMouseY() <= imageDimension) {
+            float left = GetMouseX()+15;
+            float top = GetMouseY()+15;
+            Color col {250, 250, 250, 200};
+            Font oldFont = GuiGetFont();
+            
+            long double locX = hm->offset_x + ((long double)(((long double)GetMouseX()/(imageDimension/2))-1))/hm->zoom;
+            long double locY = hm->offset_y - ((long double)(((long double)GetMouseY()/(imageDimension/2))-1))/hm->zoom;
+            char t[142];
+            sprintf (t, "%.10Lf\n%.10Lf", locX, locY);
+            DrawRectangle (left, top, 115, 40, col);
+            DrawText (t, left+5, top, 15, BLACK);
         }
 
         EndDrawing();
