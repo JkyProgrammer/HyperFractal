@@ -335,8 +335,13 @@ int gui_main () {
 
         // Decrease eval limit button pressed
         if ((buttonStates[13] || IsKeyDown((int)'[')) && !isRendering && !equationPresetDialog) {
-            hm->eval_limit--;
-            lowres_hm->eval_limit--;
+            if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
+                hm->eval_limit -= 10;
+                lowres_hm->eval_limit -= 10;
+            } else {
+                hm->eval_limit--;
+                lowres_hm->eval_limit--;
+            }
             isOutdatedRender = true;
             consoleText = "Outdated!";
             imageNeedsUpdate = true;
@@ -346,8 +351,13 @@ int gui_main () {
 
         // Increase eval limit button pressed
         if ((buttonStates[14] || IsKeyDown((int)']')) && !isRendering && !equationPresetDialog) {
-            hm->eval_limit++;
-            lowres_hm->eval_limit++;
+            if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
+                hm->eval_limit += 10;
+                lowres_hm->eval_limit += 10;
+            } else {
+                hm->eval_limit++;
+                lowres_hm->eval_limit++;
+            }
             isOutdatedRender = true;
             consoleText = "Outdated!";
             imageNeedsUpdate = true;

@@ -50,7 +50,6 @@ equation* extract_equation (string sequ) {
     //     seq = seq.substr (1, seq.length()-2);
     // }
     // FIXME: Fix edge case where (z^2) errors (prune uncessarry brackets)
-    // FIXME: Fix case of something+(0) which gives all black screen
     int brackets = count_occurrences (seq, '(');
     if (brackets != count_occurrences (seq, ')')) return NULL; /*throw std::runtime_error("enter a valid equation: bracket mismatch");*/
     equation *e = new equation();
@@ -94,7 +93,12 @@ equation* extract_equation (string sequ) {
     } else if (compos[0] == "z") e->a = value (true);
     else if (compos[0] == "c") e->a = value (false);
     else if (compos[0].find('i') != -1) e->a = value (complex<long double>(0,stod(compos[0].substr(0,compos[0].length()-1))));
-    else e->a = value ((long double)stod(compos[0]));
+    else {
+        try { e->a = value ((long double)stod(compos[0])); }
+        catch (std::invalid_argument ex) {
+            return NULL;
+        }
+    }
 
     // Process second component:
     //cout << "processing c2 " << compos[2] << endl;
@@ -104,7 +108,12 @@ equation* extract_equation (string sequ) {
     } else if (compos[2] == "z") e->b = value (true);
     else if (compos[2] == "c") e->b = value (false);
     else if (compos[2].find('i') != -1) e->b = value (complex<long double>(0,stod(compos[2].substr(0,compos[2].length()-1))));
-    else e->b = value ((long double)stod(compos[2]));
+    else {
+        try { e->b = value ((long double)stod(compos[2])); }
+        catch (std::invalid_argument ex) {
+            return NULL;
+        }
+    }
     
     //cout << "done " << seq << endl;
     return e;
