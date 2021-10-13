@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <iostream>
 #include <thread>
+#include "helptext.h"
+#include "utils.h"
 
 #define RAYGUI_IMPLEMENTATION
 #define RAYGUI_SUPPORT_ICONS
@@ -15,10 +17,12 @@
 #define WINDOW_INIT_WIDTH 900       // Initial window - width
 #define WINDOW_INIT_HEIGHT 550      //                - height
 #define BUTTON_HEIGHT 30            // Height of a single button in the interface
-#define ELEMENT_NUM_VERTICAL 12     // Number of vertical elements
-#define BUTTON_NUM_TOTAL 15         // Total number of buttons in the interface
+#define ELEMENT_NUM_VERTICAL 14     // Number of vertical elements
+#define BUTTON_NUM_TOTAL 16         // Total number of buttons in the interface
 #define CONTROL_MIN_WIDTH 400       // Minimum width of the control panel
 #define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL
+#define DIALOG_TEXT_SIZE 25
+#define HELP_TEXT_SIZE 15
 
 using namespace std;
 
@@ -117,31 +121,6 @@ p 00 19 0x00222bff    DEFAULT_BACKGROUND_COLOR)";
         offset++;
     }
     GuiUpdateStyleComplete();
-}
-
-/**
- * @brief 
- * 
- * @param i 
- * @param t 
- * @return string 
- */
-string equationPreset (int i, bool t) {
-    switch (i) {
-    case 1:
-        return t ? "Mandelbrot" : "(z^2)+c";
-    case 2:
-        return t ? "Juila 1" : "(z^2)+(0.285+0.01i)";
-    case 3:
-        return t ? "Julia 2" : "(z^2)+(-0.70176-0.3842i)";
-    case 4:
-        return t ? "Reciprocal" : "1/((z^2)+c)";
-    case 5:
-        return t ? "Z Power" : "(z^z)+(c-0.5)";
-    case 6:
-        return t ? "Bars" : "z^(c^2)";
-    }
-    return "";
 }
 
 int gui_main () {
@@ -364,6 +343,11 @@ int gui_main () {
             lowres_hm->generateImage (true);
             sleepcp (1);
         }
+
+        // Help button pressed
+        if (buttonStates[15]) {
+            dialogText = "_HELP";
+        }
         
         BeginDrawing();
         Color bgcol = GetColor (GuiGetStyle(00, BACKGROUND_COLOR));
@@ -514,16 +498,36 @@ int gui_main () {
             }
         }
 
-        
+        buttonStates[15] = GuiButton((Rectangle){(float)imageDimension, (float)GetScreenHeight()-(2*BUTTON_HEIGHT), (float)controlPanelWidth, BUTTON_HEIGHT*2}, "Help & Instructions");
+
 
         // Drawing the info dialog
         if (dialogText != "") {
-            int textwidth = MeasureText(dialogText.c_str(), GetFontDefault().baseSize);
+            float boxWidth = (2.0/3.0)*GetScreenWidth();
             DrawRectangle (0, 0, GetScreenWidth(), GetScreenHeight(), (Color){200, 200, 200, 128});
-            DrawRectangle ((GetScreenWidth()-textwidth-10)/2, (GetScreenHeight()-GetFontDefault().baseSize-10)/2, textwidth+10, GetFontDefault().baseSize+10, WHITE);
-            DrawText (dialogText.c_str(), (GetScreenWidth()-textwidth)/2, (GetScreenHeight()-GetFontDefault().baseSize)/2, GetFontDefault().baseSize, BLACK);
+
+            bool isHelp = dialogText == "_HELP";
+            if (isHelp) {
+                dialogText = "";
+                dialogText += HELP_PARA1;
+                dialogText += "\n\n";
+                dialogText += HELP_PARA2;
+                dialogText += "\n\n";
+                dialogText += HELP_PARA3;
+
+                float charSize = MeasureText ("A", HELP_TEXT_SIZE);
+                dialogText = textWrap (dialogText, boxWidth/charSize);
+                // TODO: Fix text box placement
+                Rectangle textRec = (Rectangle){((float)GetScreenWidth()-boxWidth-10)/2, ((float)(GetScreenHeight()/2)-10)/2, boxWidth+10, (float)(GetScreenHeight()/2)+10};
+                GuiDrawText (dialogText.c_str(), textRec, GUI_TEXT_ALIGN_LEFT, BLACK);
+                dialogText = "_HELP";
+            } else {
+                Rectangle textRec = (Rectangle){((float)GetScreenWidth()-boxWidth-10)/2, ((float)GetScreenHeight()-DIALOG_TEXT_SIZE-10)/2, boxWidth+10, DIALOG_TEXT_SIZE};
+                GuiDrawText (dialogText.c_str(), textRec, GUI_TEXT_ALIGN_CENTER, BLACK);
+            }
+
             GuiUnlock();
-            bool close = GuiButton((Rectangle){(float)(GetScreenWidth()-textwidth-10)/2, (float)((GetScreenHeight()-GetFontDefault().baseSize-10)/2)+30, (float)(textwidth+10), (float)(GetFontDefault().baseSize+10)}, "OK");
+            bool close = GuiButton((Rectangle){(float)(GetScreenWidth()-boxWidth-10)/2, (float)(GetScreenHeight()*(3.0/4.0)), (float)(boxWidth+10), (float)(DIALOG_TEXT_SIZE+10)}, "OK");
             if (close) dialogText = "";
         }
 
@@ -541,7 +545,6 @@ int gui_main () {
             DrawRectangle (left, top, 115, 40, col);
             DrawText (t, left+5, top, 15, BLACK);
         }
-
         EndDrawing();
         GuiUnlock();
     }
