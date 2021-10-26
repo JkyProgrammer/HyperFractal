@@ -1,7 +1,7 @@
 #include "equationparser.h"
 #include <vector>
 #include <iostream>
-
+// TODO: Rewrite using a postfix system
 using namespace std;
 
 int count_occurrences (string s, char c) {
@@ -10,12 +10,67 @@ int count_occurrences (string s, char c) {
     return o;
 }
 
-string lower (string s) {
-    string r = "";
-    for (char c : s) {
-        if ('A' <= c && c <= 'Z') r.push_back (c-'A'+'a');
-        else r.push_back (c);
+int expectedElementType (char c) {
+    if (c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' || c == '7' || c == '8' || c == '9' || c == '.') {
+        return 2;
+    } else if (c == 'i') return 3;
+    else if (c == 'z') return 0;
+    else if (c == 'c') return 1;
+    else if (c == '(' || c == ')') return 4;
+    else if (c == '*' || c == '/' || c == '+' || c == '-' || c == '^') return 5;
+    else throw runtime_error ("you put a dud character in: " + string{c});
+    return -1;
+}
+
+string fixExplicitMultiplication (string s) {
+    string innerCorrected = s;
+
+    // First fix all inner brackets
+    int start = 0;
+    start = s.find ('(', start);
+    while (start != string::npos) {
+        int end = start;
+        int bDepth = 1;
+        while (bDepth > 0 && end < innerCorrected.length()) {
+            end++;
+            if (innerCorrected[end] == '(') bDepth++;
+            if (innerCorrected[end] == ')') bDepth--;
+        }
+        string inner = innerCorrected.substr (start+1, end-(start+1));
+        string corrected = fixExplicitMultiplication (inner);
+        innerCorrected.replace (start+1, end-(start+1), corrected);
+        start = end + (corrected.length()-inner.length());
+        start = innerCorrected.find ('(', start+1);
     }
+
+    innerCorrected = fixDuplicateBrackets (innerCorrected);
+    // TODO: Remove uncessesarry stacked (nested) brackets
+
+    // Convert implicit multiplication to explicit
+    string r = "";
+    for (int charIndex = 0; charIndex < innerCorrected.length()-1; charIndex++) {
+        
+        // Match the currently examined char-pair with an implicit multiplcation pattern
+        
+        // TODO: Find the start of an element
+        // TODO: Find the end
+        // TODO: Find the end of the next element
+        // TODO: If there's implicit multiplication between them, bracket them and add *
+        // TODO: Otherwise, skip to the end of the element
+    }
+    return r;
+}
+
+string prepare (string s) {
+    // Convert the input to lowercase and remove spaces
+    string lowercased = "";
+    for (char c : s) {
+        if ('A' <= c && c <= 'Z') lowercased.push_back (c-'A'+'a');
+        else if (c != ' ') lowercased.push_back (c);
+    }
+
+    string r = fixExplicitMultiplication (lowercased);
+
     return r;
 }
 
@@ -44,77 +99,88 @@ vector<string> components (string seq) {
     return r;
 }
 
+
+
+int findEndBracket (string s, int startOffset) {
+    int bracketDepth = 1;
+    for (int i = startOffset+1; i < s.length(); i++) {
+        if (s[i] == '(') bracketDepth++;
+        if (s[i] == ')') bracketDepth--;
+        if (bracketDepth == 0) return i;
+    }
+    return -1;
+}
+
+vector<string> getPostfixFrom (string s) {
+    cout << "grabbing postfix from: \'" << s << "\'" << endl;
+    vector<string> postfix;
+    int charIndex = 0;
+    bool isWaitingForExpression = false;
+    string currentElement = "";
+    string operand = "";
+    int currentElementType = -1;
+    int sLen = s.length();
+
+    while (charIndex < sLen) {
+        
+        cout << "STATUS" << endl;
+        cout << "charIndex: " << charIndex << endl;
+        cout << "isWaitingForExpression: " << isWaitingForExpression << endl;
+        cout << "currentElement: " << currentElement << endl;
+        
+        int nextElType = expectedElementType (s[charIndex]);
+        if (nextElType == 4) {
+            int bracketEndIndex = findEndBracket (s, charIndex);
+            string sub = s.substr(charIndex+1, bracketEndIndex-charIndex-1);
+            vector<string> inner = getPostfixFrom (sub);
+            postfix.insert (postfix.end(), inner.begin(), inner.end());
+            if (isWaitingForExpression) {
+                currentElement = "";
+                currentElementType = -1;
+                postfix.push_back (operand);
+                isWaitingForExpression = false;
+            }
+            charIndex = bracketEndIndex;
+            currentElement = "";
+            currentElementType = -1;
+        } else if (nextElType == 5) {
+            if (currentElement != "") postfix.push_back (currentElement);
+            currentElement = "";
+            currentElementType = -1;
+            if (isWaitingForExpression) {
+                postfix.push_back (operand);
+            }
+            isWaitingForExpression = true;
+            operand = "";
+            operand += s[charIndex];
+        } else {
+            if (currentElementType == -1) currentElementType = nextElType;
+            if (nextElType == 3) {
+                if (currentElementType == 2 || currentElementType == 3 || currentElementType == -1) currentElementType = 3;
+                else throw runtime_error ("you can't put an i there!");
+            }
+            currentElement += s[charIndex];
+        }
+
+        charIndex++;
+
+        if (charIndex == sLen && currentElement != "") {
+            postfix.push_back (currentElement);
+            currentElement = "";
+            currentElementType = -1;
+            postfix.push_back (operand);
+        }
+    }
+    
+    return postfix;
+}
+
 equation* extract_equation (string sequ) {
-    string seq = lower(sequ);
-    // while (seq[0] == '(' && seq[seq.length()-1] == ')') {
-    //     seq = seq.substr (1, seq.length()-2);
-    // }
-    // FIXME: Fix edge case where (z^2) errors (prune uncessarry brackets)
+    string seq = prepare(sequ);
     int brackets = count_occurrences (seq, '(');
     if (brackets != count_occurrences (seq, ')')) return NULL; /*throw std::runtime_error("enter a valid equation: bracket mismatch");*/
-    equation *e = new equation();
-    vector<string> compos = components(seq);
-    //cout << "starting " << seq << endl;
-    
-    if (compos.size() != 3) { 
-        //cout << "whoops" << endl; 
-        return NULL; 
-    }/*throw std::runtime_error("enter a valid equation: malformed expression:" + seq);*/
-    switch (compos[1][0]) {
-    case '+':
-        e->operation = 0;
-        break;
-    case '-':
-        e->operation = 1;
-        break;
-    case '*':
-        e->operation = 2;
-        break;
-    case '/':
-        e->operation = 3;
-        break;
-    case '^':
-        e->operation = 4;
-        break;
-    default:
-        return NULL; /*throw std::runtime_error("enter a valid equation: invalid operation");*/
-        break;
-    }
-
-    if (compos[0].length() == 0 || compos[2].length() == 0) {
-        //cout << "whoops2" << endl;
-        return NULL;
-    }
-    // Process first component:
-    //cout << "processing c1 " << compos[0] << endl;
-    if (compos[0].find('(') != -1) {
-        e->a = value (extract_equation(compos[0].substr(1,compos[0].length()-2)));
-        if (e->a.eVal == NULL) return NULL; 
-    } else if (compos[0] == "z") e->a = value (true);
-    else if (compos[0] == "c") e->a = value (false);
-    else if (compos[0].find('i') != -1) e->a = value (complex<long double>(0,stod(compos[0].substr(0,compos[0].length()-1))));
-    else {
-        try { e->a = value ((long double)stod(compos[0])); }
-        catch (std::invalid_argument ex) {
-            return NULL;
-        }
-    }
-
-    // Process second component:
-    //cout << "processing c2 " << compos[2] << endl;
-    if (compos[2].find('(') != -1) {
-        e->b = value (extract_equation(compos[2].substr(1,compos[2].length()-2)));
-        if (e->b.eVal == NULL) return NULL; 
-    } else if (compos[2] == "z") e->b = value (true);
-    else if (compos[2] == "c") e->b = value (false);
-    else if (compos[2].find('i') != -1) e->b = value (complex<long double>(0,stod(compos[2].substr(0,compos[2].length()-1))));
-    else {
-        try { e->b = value ((long double)stod(compos[2])); }
-        catch (std::invalid_argument ex) {
-            return NULL;
-        }
-    }
-    
-    //cout << "done " << seq << endl;
+    equation *e = new equation ();
+    vector<string> postfix = getPostfixFrom (seq);
+    for (string s : postfix) cout << s << endl;
     return e;
 }
