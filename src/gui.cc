@@ -98,7 +98,7 @@ p 00 19 0x00222bff    DEFAULT_BACKGROUND_COLOR)";
         if (stylesheet[offset] == ' ') {
             stylePointIndex++;
         } else if (stylesheet[offset] == '\n' || stylesheet[offset] == '\0') {
-            GuiSetStyle (stoi(stylePointControl), stoi(stylePointProperty), stol(stylePointValue, nullptr, 16));
+            GuiSetStyle (stoi(stylePointControl), stoi(stylePointProperty), stoll(stylePointValue, nullptr, 16));
             stylePointControl = "";
             stylePointProperty = "";
             stylePointValue = "";
