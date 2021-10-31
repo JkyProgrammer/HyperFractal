@@ -100,12 +100,16 @@ ep_check_status ep_check (string s) {
             break;
         case '*':
         case '/':
-        case '-':
         case '+':
         case '^':
             if (cLast == '*' || cLast == '/' || cLast == '-' || cLast == '+' || cLast == '^') return OPERATION_ERROR;
             if (cLast == '.') return FPOINT_ERROR;
             if (index == 0 || index == s.length()-1) return OPERATION_ERROR;
+            break;
+        case '-':
+            if (cLast == '-') return OPERATION_ERROR;
+            if (cLast == '.') return FPOINT_ERROR;
+            if (index == s.length()-1) return OPERATION_ERROR;
             break;
         case '0':
         case '1':
@@ -131,6 +135,8 @@ ep_check_status ep_check (string s) {
         index++;
         if (bracketDepth < 0) return BRACKET_ERROR;
     }
+
+    if (bracketDepth != 0) return BRACKET_ERROR;
     return SUCCESS;
 }
 
@@ -247,6 +253,33 @@ vector<intermediate_token> ep_tokenise (string s) {
         if (i == s.length()-1) {
             isLastRun = true;
             i--;
+        }
+    }
+
+    // Check through and repair any `-...` expressions to be `0-...`
+    for (int i = 0; i < tokenVec.size(); i++) {
+        if (tokenVec[i].type == INT_OPERATION && tokenVec[i].opVal == '-') {
+            if (i == 0 || (i > 0 && tokenVec[i-1].type == INT_OPERATION)) {
+                intermediate_token bracket;
+                bracket.type = INT_BRACKET;
+                int bracketLength = 1;
+                bracket.bracketval.push_back ({
+                    .type = INT_NUMBER,
+                    .numVal = 0
+                });
+                bracket.bracketval.push_back ({
+                    .type = INT_OPERATION,
+                    .opVal = '-'
+                });
+                while (tokenVec[i+bracketLength].type != INT_OPERATION) {
+                    bracket.bracketval.push_back (tokenVec[i+bracketLength]);
+                    bracketLength++;
+                }
+
+                for (int tmp = 0; tmp < bracketLength; tmp++) tokenVec.erase (next(tokenVec.begin(), i));
+                tokenVec.insert (next(tokenVec.begin(), i), bracket);
+                i -= bracketLength-1;
+            }
         }
     }
 
@@ -399,6 +432,7 @@ vector<token> ep_rpConvert (vector<intermediate_token> intermediate) {
 }
 
 equation* extract_equation (string sequ) {
+    if (sequ.length() < 1) return NULL;
     string cleaned = ep_clean (sequ);
     if (ep_check (cleaned) != SUCCESS) return NULL;
 

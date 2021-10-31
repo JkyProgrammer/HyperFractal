@@ -24,6 +24,9 @@ complex<long double> equation::compute (complex<long double> z, complex<long dou
             case 'c':
                 valueStack.push (c);
                 break;
+            case 'i':
+                valueStack.push (complex<long double> (0,1));
+                break;
             default:
                 break;
             }
