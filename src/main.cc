@@ -3,6 +3,12 @@
 #include "gui.h"
 
 int main (int argc, char *argv[]) {
+    //extract_equation ("5z + 2c/5"); // 5z*2c5/*+
+    //exit(0);
+    //extract_equation ("5z + 16ci - 3(2z+(c^2z))"); //5z*16c*i*+3 2z*c2z*^+*-
+    //extract_equation ("z/5 + (c^z)*(z^3)");
+    //exit (0);
+
     if (argc == 8) {
         hfractal_main hm;
         hm.resolution = stoi (argv[1]);
