@@ -1,46 +1,45 @@
 #include <complex>
+#include <chrono>
+#include <vector>
 
 #ifndef FRACTAL_H
 #define FRACTAL_H
 
-#include <boost/multiprecision/cpp_complex.hpp>
-
-using cpp_complex_512 = boost::multiprecision::cpp_complex<100, boost::multiprecision::backends::digit_base_10, void, std::int32_t, -262142, 262143>;
-
 using namespace std;
+
+enum token_type {
+    NUMBER,
+    LETTER,
+    OPERATION
+};
+
+struct token {
+    token_type type;
+    double numVal;
+    char otherVal;
+};
 
 class equation;
 
-bool is_infinity (cpp_complex_512 comp);
+bool is_infinity (complex<long double> comp);
 
-class value {
-public:
-    cpp_complex_512 cVal;
-    equation *eVal;
-    bool lVal; // true - z, false - c
-    int type; // 0 - Constant, 1 - letter substitution, 2 - sub-equation
-
-    value (cpp_complex_512 c);
-
-    value (long double c);
-
-    value (bool l);
-
-    value (equation *e);
-    
-    value ();
+struct timing_data {
+    chrono::microseconds d_compute;
+    chrono::microseconds d_isinf;
+    chrono::microseconds d_math;
+    chrono::microseconds d_evaluate;
+    chrono::microseconds d_get;
+    chrono::microseconds d_set;
 };
 
 class equation {
 public:
-    value a;
-    value b;
-    int operation;
+    vector<token> reversePolishVector;
 
-    cpp_complex_512 compute (cpp_complex_512 z, cpp_complex_512 c);
-    int evaluate (cpp_complex_512 c, int limit, float threshold=1.0);
+    complex<long double> compute (complex<long double> z, complex<long double> c);
+    int evaluate (complex<long double> c, int limit, timing_data *d_time);
 
-    equation (value aVal, value bVal, int op);
+    equation (vector<token> rpVec);
     equation ();
 };
 

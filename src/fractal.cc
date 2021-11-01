@@ -1,79 +1,99 @@
 #include "fractal.h"
 #include <iostream>
-
-bool is_infinity (cpp_complex_512 comp) {
-    return pow(comp.real(),2.0) + pow(comp.imag(),2.0) > (long double)2;
-}
-
-value::value (cpp_complex_512 c) {
-    cVal = c;
-    type = 0;
-}
-
-value::value (long double c) {
-    cVal = cpp_complex_512 {c, 0};
-    type = 0;
-}
-
-value::value (bool l) {
-    lVal = l;
-    type = 1;
-}
-
-value::value (equation *e) {
-    eVal = e;
-    type = 2;
-}
-
-value::value () {
-
-}
-
-cpp_complex_512 equation::compute (cpp_complex_512 z, cpp_complex_512 c) {
-    cpp_complex_512 v1;
-    cpp_complex_512 v2;
-    if (a.type == 0) v1 = a.cVal;
-    else if (a.type == 1) v1 = a.lVal ? z : c;
-    else v1 = a.eVal->compute(z, c);
-
-    if (b.type == 0) v2 = b.cVal;
-    else if (b.type == 1) v2 = b.lVal ? z : c;
-    else v2 = b.eVal->compute(z, c);
-    cpp_complex_512 rv {0,0};
-    switch (operation) {
-    case 0:
-        rv = v1+v2;
-        break;
-    case 1:
-        rv = v1-v2;
-        break;
-    case 2:
-        rv = v1*v2;
-        break;
-    case 3:
-        rv = v1/v2;
-        break;
-    case 4:
-        rv = pow(v1, v2);
-    }
-    return rv;
-}
+#include <chrono>
+#include <stack>
+using namespace std::chrono;
 using namespace std;
-int equation::evaluate (cpp_complex_512 c, int limit, float threshold) {
-    std::cout << c << std::endl;
-    cpp_complex_512 last = compute (c, c);
-    int depth = 0;
-    while (abs(last) < 2 && (depth < limit)) {
-        depth++;
-        last = compute (last, c);
+
+bool is_infinity (complex<long double> comp) {
+    //return (abs(comp.real()) + abs(comp.imag())) >= 2;
+    return (comp.real()*comp.real()) + (comp.imag()*comp.imag()) > (long double)4;
+}
+
+complex<long double> equation::compute (complex<long double> z, complex<long double> c) {
+    stack<complex<long double>> valueStack;
+
+    for (token t : reversePolishVector) {
+        if (t.type == NUMBER) {
+            valueStack.push (t.numVal);
+        } else if (t.type == LETTER) {
+            switch (t.otherVal) {
+            case 'z':
+                valueStack.push (z);
+                break;
+            case 'c':
+                valueStack.push (c);
+                break;
+            case 'a':
+                valueStack.push (c.real());
+                break;
+            case 'b':
+                valueStack.push (c.imag());
+                break;
+            case 'x':
+                valueStack.push (z.real());
+                break;
+            case 'y':
+                valueStack.push (z.imag());
+                break;
+            case 'i':
+                valueStack.push (complex<long double> (0,1));
+                break;
+            default:
+                break;
+            }
+        } else if (t.type == OPERATION) {
+            complex<long double> v2 = valueStack.top(); valueStack.pop();
+            complex<long double> v1 = valueStack.top(); valueStack.pop();
+            switch (t.otherVal) {
+            case '^':
+                valueStack.push (pow (v1, v2));
+                break;
+            case '/':
+                valueStack.push (v1/v2);
+                break;
+            case '*':
+                valueStack.push (v1*v2);
+                break;
+            case '+':
+                valueStack.push (v1+v2);
+                break;
+            case '-':
+                valueStack.push (v1-v2);
+                break;
+            default:
+                break;
+            }
+        }
     }
+
+    return valueStack.top();
+}
+
+int equation::evaluate (complex<long double> c, int limit, timing_data *d_time) {
+    //microseconds d_compute = microseconds(0);
+    //microseconds d_isinf = microseconds(0);
+
+    complex<long double> last = c;
+    int depth = 0;
+    while (depth < limit) {
+        //auto t_a = high_resolution_clock::now();
+        last = compute (last, c);
+        depth++;
+        //auto t_b = high_resolution_clock::now();
+        bool b = is_infinity (last);
+        //auto t_c = high_resolution_clock::now();
+        //d_compute += duration_cast<microseconds> (t_b-t_a);
+        //d_isinf += duration_cast<microseconds> (t_c-t_b);
+        if (b) break;
+    }
+    //d_time->d_compute += d_compute;
+    //d_time->d_isinf += d_isinf;
     return depth;
 }
 
-equation::equation (value aVal, value bVal, int op) {
-    operation = op;
-    a = aVal;
-    b = bVal;
+equation::equation (vector<token> rpVec) {
+    reversePolishVector = rpVec;
 }
 
 equation::equation () {}
@@ -81,12 +101,19 @@ equation::equation () {}
 #define OPS "+-*/^"
 
 std::ostream & operator<<(std::ostream & Str, equation const & v) { 
-  if (v.a.type == 0) Str << v.a.cVal;
-  if (v.a.type == 1) Str << (v.a.lVal ? "Z" : "C");
-  if (v.a.type == 2) Str << "(" << *v.a.eVal << ")";
-  Str << " " << OPS[v.operation] << " ";
-  if (v.b.type == 0) Str << v.b.cVal;
-  if (v.b.type == 1) Str << (v.b.lVal ? "Z" : "C");
-  if (v.b.type == 2) Str << "(" << *v.b.eVal << ")";
-  return Str;
+    for (token t : v.reversePolishVector) {
+        switch (t.type) {
+        case LETTER:
+        case OPERATION:
+            Str << t.otherVal;
+            break;
+        case NUMBER:
+            Str << t.numVal;
+            break;
+        default:
+            break;
+        }
+        Str << endl;
+    }
+    return Str;
 }

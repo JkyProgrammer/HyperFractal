@@ -5,6 +5,7 @@
 #include "gui.h"
 
 int main (int argc, char *argv[]) {
+
     if (argc == 8) {
         hfractal_main hm;
         hm.resolution = stoi (argv[1]);
