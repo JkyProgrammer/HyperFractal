@@ -7,7 +7,7 @@ using namespace std;
 
 bool is_infinity (complex<long double> comp) {
     //return (abs(comp.real()) + abs(comp.imag())) >= 2;
-    return pow(comp.real(),2.0) + pow(comp.imag(),2.0) > (long double)4;
+    return (comp.real()*comp.real()) + (comp.imag()*comp.imag()) > (long double)4;
 }
 
 complex<long double> equation::compute (complex<long double> z, complex<long double> c) {
@@ -23,6 +23,18 @@ complex<long double> equation::compute (complex<long double> z, complex<long dou
                 break;
             case 'c':
                 valueStack.push (c);
+                break;
+            case 'a':
+                valueStack.push (c.real());
+                break;
+            case 'b':
+                valueStack.push (c.imag());
+                break;
+            case 'x':
+                valueStack.push (z.real());
+                break;
+            case 'y':
+                valueStack.push (z.imag());
                 break;
             case 'i':
                 valueStack.push (complex<long double> (0,1));

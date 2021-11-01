@@ -4,7 +4,7 @@
 
 using namespace std;
 
-// TODO: x and y, p and q
+// TODO: Modulus
 
 enum intermediate_token_type {
     INT_NUMBER,
@@ -73,7 +73,7 @@ enum ep_check_status {
  * 2 - Operation error: '**', '*-' or any other repetition of an operation
  * 3 - Implicit multiplication error: 'z2' rather than correct synax '2z'
  * 4 - Floating point error: '.46', '34.'
- * 5 - Unsupported character error: '$', 'a', or any other character not accounted for
+ * 5 - Unsupported character error: '$', 'd', or any other character not accounted for
  * 
  * @param s Input string
  * @return Either the reference of the first error detected or zero if no error is found
@@ -95,6 +95,10 @@ ep_check_status ep_check (string s) {
             break;
         case 'z':
         case 'c':
+        case 'a':
+        case 'b':
+        case 'x':
+        case 'y':
         case 'i':
             if (cLast == '.') return FPOINT_ERROR;
             break;
@@ -121,7 +125,7 @@ ep_check_status ep_check (string s) {
         case '7':
         case '8':
         case '9':
-            if (cLast == 'z' || cLast == 'c' || cLast == 'i') return IMULT_ERROR;
+            if (cLast == 'z' || cLast == 'c' || cLast == 'i' || cLast == 'a' || cLast == 'b' || cLast == 'x' || cLast == 'y') return IMULT_ERROR;
             break;
         case '.':
             if (!(cLast == '0' || cLast == '1' || cLast == '2' || cLast == '3' || cLast == '4' || cLast == '5' || cLast == '6' || cLast == '7' || cLast == '8' || cLast == '9')) return FPOINT_ERROR;
@@ -177,6 +181,18 @@ vector<intermediate_token> ep_tokenise (string s) {
         case 'c':
             charTokenType = 2;
             break;
+        case 'a':
+            charTokenType = 6;
+            break;
+        case 'b':
+            charTokenType = 7;
+            break;
+        case 'x':
+            charTokenType = 8;
+            break;
+        case 'y':
+            charTokenType = 9;
+            break;
         case 'i':
             charTokenType = 3;
             break;
@@ -204,16 +220,14 @@ vector<intermediate_token> ep_tokenise (string s) {
                     token.numVal = stod (currentToken);
                     break;
                 case 1:
-                    token.type = INT_LETTER;
-                    token.letVal = 'z';
-                    break;
                 case 2:
-                    token.type = INT_LETTER;
-                    token.letVal = 'c';
-                    break;
                 case 3:
+                case 6:
+                case 7:
+                case 8:
+                case 9:
                     token.type = INT_LETTER;
-                    token.letVal = 'i';
+                    token.letVal = currentToken[0];
                     break;
                 case 4:
                     token.type = INT_OPERATION;

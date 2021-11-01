@@ -57,7 +57,6 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
 // TODO: Add comments to all the code (CURRENT)
 // TODO: Implement existing buttons
 // TODO: Add numerical zoom/offset inputs (TF)
-// TODO: Better equation input?
 // TODO: Help/instructions
 
 // TODO: Remove all debugging related stuff
@@ -346,14 +345,14 @@ int gui_main () {
 
         // Help button pressed
         if (buttonStates[15]) {
-            dialogText = "_HELP";
+            system ("open https://github.com/JkyProgrammer/HyperFractal/blob/i-give-up/README.md#help--instructions");
         }
         
         BeginDrawing();
         Color bgcol = GetColor (GuiGetStyle(00, BACKGROUND_COLOR));
         ClearBackground(bgcol);
 
-        // Image updating code  
+        // Image updating code  s
         if (imageNeedsUpdate) {
             if (hm->img->is_done() && !isOutdatedRender) {
                 UnloadImage (bufferImage);
@@ -435,9 +434,8 @@ int gui_main () {
         // Custom equation input box
         bool res = GuiTextBox ((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, equationTmp.data(), 1, false);
         int key = GetCharPressed();
-        if ((key == 122 || key == 99 || (key >= 48 && key <= 57) || key == 94 || (key >= 40 && key <= 43) || key == 45 || key == 46 || key == 47 || key == 'i') && !isRendering) {
+        if ((((int)'a' <= key && key <= (int)'c') || ((int)'x' <= key && key <= (int)'z') || key == 122 || (key >= 48 && key <= 57) || key == 94 || (key >= 40 && key <= 43) || key == 45 || key == 46 || key == 47 || key == 'i') && !isRendering) {
             equationTmp += (char)key;
-            std::cout << equationTmp << std::endl;
             hm->eq = equationTmp;
             lowres_hm->eq = equationTmp;
             if (lowres_hm->generateImage (true)) consoleText = "Invalid equation input";
@@ -448,7 +446,6 @@ int gui_main () {
             }
         } else if (GetKeyPressed () == KEY_BACKSPACE && !isRendering && equationTmp.length() > 0) {
             equationTmp.pop_back();
-            std::cout << equationTmp << std::endl;
             hm->eq = equationTmp;
             lowres_hm->eq = equationTmp;
             if (lowres_hm->generateImage (true)) consoleText = "Invalid equation input";
@@ -506,28 +503,39 @@ int gui_main () {
             float boxWidth = (2.0/3.0)*GetScreenWidth();
             DrawRectangle (0, 0, GetScreenWidth(), GetScreenHeight(), (Color){200, 200, 200, 128});
 
-            bool isHelp = dialogText == "_HELP";
-            if (isHelp) {
-                dialogText = "";
-                dialogText += HELP_PARA1;
-                dialogText += "\n\n";
-                dialogText += HELP_PARA2;
-                dialogText += "\n\n";
-                dialogText += HELP_PARA3;
+            // bool isHelp = dialogText == "_HELP";
+            // if (isHelp) {
+            //     dialogText = "";
+            //     dialogText += HELP_PARA1;
+            //     dialogText += "\n\n";
+            //     dialogText += HELP_PARA2;
+            //     dialogText += "\n\n";
+            //     dialogText += HELP_PARA3;
 
-                float charSize = MeasureText ("A", HELP_TEXT_SIZE);
-                dialogText = textWrap (dialogText, boxWidth/charSize);
-                // TODO: Fix text box placement
-                Rectangle textRec = (Rectangle){((float)GetScreenWidth()-boxWidth-10)/2, ((float)(GetScreenHeight()/2)-10)/2, boxWidth+10, (float)(GetScreenHeight()/2)+10};
-                GuiDrawText (dialogText.c_str(), textRec, GUI_TEXT_ALIGN_LEFT, BLACK);
-                dialogText = "_HELP";
-            } else {
-                Rectangle textRec = (Rectangle){((float)GetScreenWidth()-boxWidth-10)/2, ((float)GetScreenHeight()-DIALOG_TEXT_SIZE-10)/2, boxWidth+10, DIALOG_TEXT_SIZE};
+            //     float charSize = MeasureText ("A", HELP_TEXT_SIZE);
+            //     dialogText = textWrap (dialogText, boxWidth/charSize);
+            //     
+            //     Rectangle textRec = (Rectangle){
+            //         ((float)GetScreenWidth()-boxWidth-10)/2, 
+            //         ((float)(GetScreenHeight()/2)-10)/2, 
+            //         boxWidth+10, 
+            //         (float)(GetScreenHeight()/2)+10
+            //     };
+            //     DrawRectangleRec (textRec, RED);
+            //     GuiDrawText (dialogText.c_str(), textRec, GUI_TEXT_ALIGN_LEFT, BLACK);
+            //     dialogText = "_HELP";
+            //} else {
+                Rectangle textRec = (Rectangle){
+                    ((float)GetScreenWidth()-boxWidth-10)/2, 
+                    ((float)GetScreenHeight()-DIALOG_TEXT_SIZE-10)/2, 
+                    boxWidth+10, 
+                    DIALOG_TEXT_SIZE
+                };
                 GuiDrawText (dialogText.c_str(), textRec, GUI_TEXT_ALIGN_CENTER, BLACK);
-            }
+            //}
 
             GuiUnlock();
-            bool close = GuiButton((Rectangle){(float)(GetScreenWidth()-boxWidth-10)/2, (float)(GetScreenHeight()*(3.0/4.0)), (float)(boxWidth+10), (float)(DIALOG_TEXT_SIZE+10)}, "OK");
+            bool close = GuiButton((Rectangle){(float)(GetScreenWidth()-boxWidth-10)/2, (float)(GetScreenHeight()*(3.0/4.0)+10), (float)(boxWidth+10), (float)(DIALOG_TEXT_SIZE+10)}, "OK");
             if (close) dialogText = "";
         }
 
