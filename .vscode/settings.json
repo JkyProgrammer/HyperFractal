@@ -96,7 +96,8 @@
         "cinttypes": "cpp",
         "list": "cpp",
         "xhash": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "*.ipp": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

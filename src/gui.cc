@@ -57,11 +57,12 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
 // TODO: Add comments to all the code (CURRENT)
 // TODO: Implement existing buttons
 // TODO: Add numerical zoom/offset inputs (TF)
-// TODO: Help/instructions
-
+// TODO: Rewrite pixel distribution
 // TODO: Remove all debugging related stuff
+// TODO: Add static equations
 
 // CONGRATS! We're running a 12.21s benchmark vs 37.00s from the Java version
+// Ah, unfortunately thats now a 20s benchmark using the more precise infinity comparison
 
 #define EQ_MANDELBROT 1 // "(z^2)+c"
 #define EQ_JULIA_1 2 // "(z^2)+(0.285+0.01i)"

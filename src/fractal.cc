@@ -10,7 +10,7 @@ bool is_infinity (complex<long double> comp) {
     return (comp.real()*comp.real()) + (comp.imag()*comp.imag()) > (long double)4;
 }
 
-complex<long double> equation::compute (complex<long double> z, complex<long double> c) {
+complex<long double> equation::compute (complex<long double> z, complex<long double> c) {    
     stack<complex<long double>> valueStack;
 
     for (token t : reversePolishVector) {
@@ -113,7 +113,7 @@ std::ostream & operator<<(std::ostream & Str, equation const & v) {
         default:
             break;
         }
-        Str << endl;
+        //Str << endl;
     }
     return Str;
 }
