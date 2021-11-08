@@ -7,6 +7,15 @@
 
 using namespace std;
 
+enum EQ_PRESETS {
+    EQ_MANDELBROT = 1, // "(z^2)+c"
+    EQ_JULIA_1 = 2, // "(z^2)+(0.285+0.01i)"
+    EQ_JULIA_2 = 3, // "(z^2)+(-0.70176-0.3842i)"
+    EQ_RECIPROCAL = 4, // "1/((z^2)+c)"
+    EQ_ZPOWER = 5, // "(z^z)+(c-0.5)"
+    EQ_BARS = 6 // "z^(c^2)"
+};
+
 enum token_type {
     NUMBER,
     LETTER,
@@ -35,6 +44,9 @@ struct timing_data {
 class equation {
 public:
     vector<token> reversePolishVector;
+
+    bool isPreset = false;
+    int preset = -1;
 
     complex<long double> compute (complex<long double> z, complex<long double> c);
     int evaluate (complex<long double> c, int limit, timing_data *d_time);

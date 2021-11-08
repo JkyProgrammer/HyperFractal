@@ -78,7 +78,33 @@ int equation::evaluate (complex<long double> c, int limit, timing_data *d_time) 
     int depth = 0;
     while (depth < limit) {
         //auto t_a = high_resolution_clock::now();
-        last = compute (last, c);
+        // Switch between custom parsing mode and preset mode for more efficient computing of presets
+        if (!isPreset) {
+            last = compute (last, c);
+        } else {
+            switch (preset) {
+            case EQ_MANDELBROT:
+                last = (last*last)+c;
+                break;
+            case EQ_JULIA_1:
+                last = (last*last)+complex<long double>(0.285, 0.01);
+                break;
+            case EQ_JULIA_2:
+                last = (last*last)-complex<long double>(0.70176, 0.3842);
+                break;
+            case EQ_RECIPROCAL:
+                last = complex<long double>(1,0)/((last*last)+c);
+                break;
+            case EQ_ZPOWER:
+                last = pow(last,last)+c-complex<long double>(0.5, 0);
+                break;
+            case EQ_BARS:
+                last = pow(last, c*c);
+                break;
+            default:
+                break;
+            }
+        }
         depth++;
         //auto t_b = high_resolution_clock::now();
         bool b = is_infinity (last);

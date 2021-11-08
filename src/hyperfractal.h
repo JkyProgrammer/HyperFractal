@@ -21,6 +21,7 @@ public:
     string eq;
     int worker_threads;
     int eval_limit;
+    int preset = -1;
     image *img = new image(0,0);
     equation *main_equation;
     std::vector<std::thread*> thread_pool;

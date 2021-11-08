@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <iostream>
 #include <thread>
-#include "helptext.h"
 #include "utils.h"
 
 #define RAYGUI_IMPLEMENTATION
@@ -59,17 +58,10 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
 // TODO: Add numerical zoom/offset inputs (TF)
 // TODO: Rewrite pixel distribution
 // TODO: Remove all debugging related stuff
-// TODO: Add static equations
 
 // CONGRATS! We're running a 12.21s benchmark vs 37.00s from the Java version
 // Ah, unfortunately thats now a 20s benchmark using the more precise infinity comparison
-
-#define EQ_MANDELBROT 1 // "(z^2)+c"
-#define EQ_JULIA_1 2 // "(z^2)+(0.285+0.01i)"
-#define EQ_JULIA_2 3 // "(z^2)+(-0.70176-0.3842i)"
-#define EQ_RECIPROCAL 4 // "1/((z^2)+c)"
-#define EQ_ZPOWER 5 // "(z^z)+(c-0.5)"
-#define EQ_BARS 6 // "z^(c^2)"
+// Using optimisations and with hard-coded presets, we achieve a ONE SECOND BENCHMARK
 
 void ConfigureGuiStyle () {
     // This function implements the 'cyber' interface style provided by raygui's documentation.
@@ -353,7 +345,7 @@ int gui_main () {
         Color bgcol = GetColor (GuiGetStyle(00, BACKGROUND_COLOR));
         ClearBackground(bgcol);
 
-        // Image updating code  s
+        // Image updating code
         if (imageNeedsUpdate) {
             if (hm->img->is_done() && !isOutdatedRender) {
                 UnloadImage (bufferImage);
@@ -437,6 +429,7 @@ int gui_main () {
         int key = GetCharPressed();
         if ((((int)'a' <= key && key <= (int)'c') || ((int)'x' <= key && key <= (int)'z') || key == 122 || (key >= 48 && key <= 57) || key == 94 || (key >= 40 && key <= 43) || key == 45 || key == 46 || key == 47 || key == 'i') && !isRendering) {
             equationTmp += (char)key;
+            
             hm->eq = equationTmp;
             lowres_hm->eq = equationTmp;
             if (lowres_hm->generateImage (true)) consoleText = "Invalid equation input";

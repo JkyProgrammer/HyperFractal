@@ -1,4 +1,5 @@
 #include "hyperfractal.h"
+#include "utils.h"
 #include <iostream>
 #include <iomanip>
 #include <chrono>
@@ -45,8 +46,22 @@ int hfractal_main::generateImage (bool wait=true) {
     std::cout << "OffsetY="; printf ("%.70Lf", offset_y); std::cout << std::endl;
     std::cout << "Parsing equation: \"" << eq + "\"" << std::endl;
     main_equation = extract_equation (eq);
-    if (main_equation != NULL) std::cout << *main_equation << std::endl;
+
     if (main_equation == NULL) { std::cout << "Stopping!" << std::endl; return 1; }
+
+    // Detect if the equation matches the blueprint of a preset
+    for (int i = 1; i < 7; i++) {
+        if (eq == equationPreset (i, false)) {
+            preset = i;
+            break;
+        }
+    }
+    main_equation->preset = preset;
+    if (preset != -1) {
+        main_equation->isPreset = true;
+    }
+
+    if (main_equation != NULL) std::cout << *main_equation << std::endl;
     if (img != NULL) img->~image();
     img = new image (resolution, resolution);
     d_all = new timing_data {
