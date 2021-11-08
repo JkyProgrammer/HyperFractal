@@ -61,7 +61,7 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
 
 // CONGRATS! We're running a 12.21s benchmark vs 37.00s from the Java version
 // Ah, unfortunately thats now a 20s benchmark using the more precise infinity comparison
-// Using optimisations and with hard-coded presets, we achieve a ONE SECOND BENCHMARK
+// Using optimisations and with hard-coded presets, we achieve a THREE SECOND BENCHMARK
 
 void ConfigureGuiStyle () {
     // This function implements the 'cyber' interface style provided by raygui's documentation.
@@ -381,8 +381,7 @@ int gui_main () {
                 UnloadTexture (tex); // Unload the old texture
                 tex = LoadTextureFromImage(bufferImage); // Reinitialise the texture from the image
             }
-        }
-        
+        } 
 
         // Draw the rendered image      
         Vector2 v {0,0};
@@ -429,7 +428,6 @@ int gui_main () {
         int key = GetCharPressed();
         if ((((int)'a' <= key && key <= (int)'c') || ((int)'x' <= key && key <= (int)'z') || key == 122 || (key >= 48 && key <= 57) || key == 94 || (key >= 40 && key <= 43) || key == 45 || key == 46 || key == 47 || key == 'i') && !isRendering) {
             equationTmp += (char)key;
-            
             hm->eq = equationTmp;
             lowres_hm->eq = equationTmp;
             if (lowres_hm->generateImage (true)) consoleText = "Invalid equation input";

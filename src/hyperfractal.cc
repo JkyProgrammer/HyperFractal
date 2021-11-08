@@ -50,6 +50,7 @@ int hfractal_main::generateImage (bool wait=true) {
     if (main_equation == NULL) { std::cout << "Stopping!" << std::endl; return 1; }
 
     // Detect if the equation matches the blueprint of a preset
+    preset = -1;
     for (int i = 1; i < 7; i++) {
         if (eq == equationPreset (i, false)) {
             preset = i;
