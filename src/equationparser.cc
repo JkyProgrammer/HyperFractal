@@ -5,7 +5,6 @@
 using namespace std;
 
 // TODO: Modulus
-// TODO: Fix exmul: in brackets problem
 
 
 enum intermediate_token_type {
@@ -321,7 +320,8 @@ vector<intermediate_token> ep_fixImplicitMul (vector<intermediate_token> tokenVe
 
         // Fix explicit multiplication within brackets
         if (t1.type == INT_BRACKET) {
-            t1.bracketval = ep_fixImplicitMul (t1.bracketval);
+            result[i].bracketval = ep_fixImplicitMul (t1.bracketval);
+            t1 = result[i];
         }
 
         // Detect two adjacent tokens, where neither is an operation
@@ -348,6 +348,15 @@ vector<intermediate_token> ep_fixImplicitMul (vector<intermediate_token> tokenVe
         last.bracketval = ep_fixImplicitMul (last.bracketval);
     }
     result[result.size()-1] = last;
+    cout << "Converted: ";
+    for (auto token : tokenVec) {
+        cout_token (token);
+    }
+    cout << "To: ";
+    for (auto token : result) {
+        cout_token (token);
+    }
+    cout << endl;
     return result;
 }
 
