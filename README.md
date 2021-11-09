@@ -33,3 +33,8 @@ The equation field in the application can handle brackets (`(...)`), indices (`^
 There is no limit to equation length or complexity, but more complex equations are likely to be more computationally expensive and increase render time significantly.
 
 The application also contains a number of equation presets, which can be fun to explore and are good starting points if you want to come up with your own equation.
+Presets run much faster than custom entered equations due to them being hard-coded.
+
+When writing your own equations, it is advised to replace `z^2` with `z*z`, as the latter evaluates much faster in a computational environment. The same can be done for any integer power of a function.
+In general, _you are advised to simplify your expression to a reasonable extent before entering it into the application, in order to reduce render time_.
+
