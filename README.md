@@ -5,7 +5,7 @@ It is intended to be functional and stable, and runs on both MacOS and Windows 1
 
 HyperFractal was designed as a teaching aid as well as a useful tool.
 
-GUI library uses [https://www.raylib.com/index.html](raylib), along with [https://github.com/raysan5/raygui](raygui).
+GUI library uses [raylib](https://www.raylib.com/index.html), along with [raygui](https://github.com/raysan5/raygui).
 
 ## Features
 * Both graphical and console interfaces
