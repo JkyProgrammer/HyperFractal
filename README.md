@@ -1,10 +1,24 @@
 # HyperFractal
 
-(project info)
+HyperFractal is a standalone application dedicated to generating mathematical fractals. This project also serves as my Computer Science A Level NEA.
+It is intended to be functional and stable, and runs on both MacOS and Windows 10 (although it may compile under other systems).
+
+HyperFractal was designed as a teaching aid as well as a useful tool.
+
+GUI library uses [raylib](https://www.raylib.com/index.html), along with [raygui](https://github.com/raysan5/raygui).
+
+## Features
+* Both graphical and console interfaces
+* Arbitrary image size
+* Allows for navigation through fractals
+* Support for storing and loading render states in/from a database
+* Support for custom fractal equations interpreted and evaluated at runtime, as well as a number of hard-coded presets
+* Multithreaded distributed rendering, although limited to the CPU
+* Full console control over render parameters
 
 ## Help & Instructions
 
-Feeling lost? Below is an explanation of the key features of the application.
+Feeling lost? Below is an explanation of how to use the GUI mode of the application.
 
 ### Rendering
 
