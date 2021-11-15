@@ -1,4 +1,5 @@
 #include "fractal.h"
+#include "utils.h"
 #include <iostream>
 #include <chrono>
 #include <stack>
@@ -73,8 +74,11 @@ complex<long double> equation::compute (complex<long double> z, complex<long dou
 int equation::evaluate (complex<long double> c, int limit, timing_data *d_time) {
     //microseconds d_compute = microseconds(0);
     //microseconds d_isinf = microseconds(0);
-
     complex<long double> last = c;
+    if (isPreset && preset == EQ_BURNINGSHIP_MODIFIED) {
+        last = complex<long double> (0, 0);
+    }
+
     int depth = 0;
     while (depth < limit) {
         //auto t_a = high_resolution_clock::now();
@@ -100,6 +104,9 @@ int equation::evaluate (complex<long double> c, int limit, timing_data *d_time) 
                 break;
             case EQ_BARS:
                 last = pow(last, c*c);
+                break;
+            case EQ_BURNINGSHIP_MODIFIED:
+                last = pow ((complex<long double>(abs(last.real()),0) - complex<long double>(0, abs(last.imag()))),2)+c;
                 break;
             default:
                 break;

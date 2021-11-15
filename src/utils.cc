@@ -21,6 +21,10 @@ string equationPreset (int i, bool t) {
         return t ? "Z Power" : "(z^z)+(c-0.5)";
     case 6:
         return t ? "Bars" : "z^(c^2)";
+    case 7:
+        return t ? "Burning Ship Modified" : "((x^2)^0.5-((y^2)^0.5)i)^2+c";
+    default:
+        return "NONE";
     }
     return "";
 }

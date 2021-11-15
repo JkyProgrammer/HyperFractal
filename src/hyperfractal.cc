@@ -51,7 +51,7 @@ int hfractal_main::generateImage (bool wait=true) {
 
     // Detect if the equation matches the blueprint of a preset
     preset = -1;
-    for (int i = 1; i < 7; i++) {
+    for (int i = 1; i <= NUM_EQUATION_PRESETS; i++) {
         if (eq == equationPreset (i, false)) {
             preset = i;
             break;

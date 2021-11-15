@@ -151,7 +151,7 @@ int gui_main () {
     // Configure preivew renderer
     lowres_hm->resolution = 64;
     lowres_hm->eq = equationDefault;
-    lowres_hm->eval_limit = 300;
+    lowres_hm->eval_limit = 200;
     lowres_hm->worker_threads = thread_count/2;
     lowres_hm->zoom = start_zoom;
     lowres_hm->offset_x = start_x_offset;
@@ -171,6 +171,13 @@ int gui_main () {
     int percent = 0; // Render completion percentage
     bool showCoords = true; // Indicates whether the coordinates of the mouse cursor in math space are shown
     bool needsToUpdateResolution = false;
+    int modalViewState = 0;    // Indicates what modal state the interface is in:
+                                /*
+                                 * 0 - Interface is in normal mode
+                                 * 1 - Interface is in text dialog mode
+                                 * 2 - Interface is in render state database mode
+                                 * 3 - Interface is in equation prest dialog mode
+                                 */
 
     // Generate the initial preview render
     lowres_hm->generateImage(true);
@@ -179,11 +186,11 @@ int gui_main () {
         if (IsWindowResized()) {
             imageDimension = std::min(GetScreenWidth()-CONTROL_MIN_WIDTH, GetScreenHeight());
             controlPanelWidth = GetScreenWidth()-imageDimension;
-            if (!isRendering) { hm->resolution = imageDimension; cout << "set!" << endl; }
+            if (!isRendering) { hm->resolution = imageDimension;}
             else needsToUpdateResolution = true;
         }
         
-        if (dialogText == "") {
+        if (modalViewState == 0 || modalViewState == 3) {
             // Detect clicking to recenter
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !isRendering) {
                 Vector2 mpos = GetMousePosition();
@@ -308,11 +315,10 @@ int gui_main () {
         if ((buttonStates[13] || IsKeyDown((int)'[')) && !isRendering && !equationPresetDialog) {
             if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
                 hm->eval_limit -= 10;
-                lowres_hm->eval_limit -= 10;
             } else {
                 hm->eval_limit--;
-                lowres_hm->eval_limit--;
             }
+            lowres_hm->eval_limit = hm->eval_limit/2;
             isOutdatedRender = true;
             consoleText = "Outdated!";
             imageNeedsUpdate = true;
@@ -324,11 +330,10 @@ int gui_main () {
         if ((buttonStates[14] || IsKeyDown((int)']')) && !isRendering && !equationPresetDialog) {
             if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
                 hm->eval_limit += 10;
-                lowres_hm->eval_limit += 10;
             } else {
                 hm->eval_limit++;
-                lowres_hm->eval_limit++;
             }
+            lowres_hm->eval_limit = hm->eval_limit/2;
             isOutdatedRender = true;
             consoleText = "Outdated!";
             imageNeedsUpdate = true;
@@ -338,7 +343,7 @@ int gui_main () {
 
         // Help button pressed
         if (buttonStates[15]) {
-            system ("open https://github.com/JkyProgrammer/HyperFractal/blob/i-give-up/README.md#help--instructions");
+            system ("open https://github.com/JkyProgrammer/HyperFractal/blob/main/README.md");
         }
         
         BeginDrawing();
@@ -419,6 +424,7 @@ int gui_main () {
         buttonStates[10] = GuiButton((Rectangle){(float)imageDimension+(float)controlPanelWidth/2, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, "Equation Presets");
         if (buttonStates[10] && !isRendering) {
             equationPresetDialog = true;
+            modalViewState = 3;
             presetDialogX = (float)imageDimension+(float)controlPanelWidth/2;
             presetDialogY = BUTTON_HEIGHT*(float)(buttonOffset+1);
         }
@@ -462,15 +468,22 @@ int gui_main () {
         GuiTextBox ((Rectangle){(float)imageDimension, BUTTON_HEIGHT*(float)buttonOffset, (float)controlPanelWidth/2, BUTTON_HEIGHT}, evalLimString, 1, false);
         buttonOffset++;
         
+        buttonStates[15] = GuiButton((Rectangle){(float)imageDimension, (float)GetScreenHeight()-(2*BUTTON_HEIGHT), (float)controlPanelWidth, BUTTON_HEIGHT*2}, "Help & Instructions");
+
+        // Clear all button states to prevent clicking 'through' equation preset buttons
+        if (modalViewState == 3) {
+            for (int i = 0; i < BUTTON_NUM_TOTAL; i++) buttonStates[i] = false;
+        }
 
         // Draw the equation preset dialog
-        if (equationPresetDialog) {
-            for (int e = 1; e < 7; e++) {
+        if (equationPresetDialog && modalViewState == 3) {
+            for (int e = 1; e <= NUM_EQUATION_PRESETS; e++) {
                 if (
                     GuiButton((Rectangle){presetDialogX, presetDialogY+(BUTTON_HEIGHT*(e-1)), (float)controlPanelWidth/2, BUTTON_HEIGHT}, equationPreset(e, true).c_str())
                 && !isRendering
                 ) {
                     equationPresetDialog = false;
+                    modalViewState = 0;
                     equationTmp = equationPreset (e, false);
                     hm->eq = equationTmp;
                     lowres_hm->eq = equationTmp;
@@ -482,13 +495,11 @@ int gui_main () {
                     }
                 }
             }
-            if (GetMouseX() < presetDialogX || GetMouseX() > presetDialogX + (float)controlPanelWidth/2 ||  GetMouseY() < presetDialogY - BUTTON_HEIGHT || GetMouseY() > presetDialogY + (BUTTON_HEIGHT*6)) {
+            if (GetMouseX() < presetDialogX || GetMouseX() > presetDialogX + (float)controlPanelWidth/2 ||  GetMouseY() < presetDialogY - BUTTON_HEIGHT || GetMouseY() > presetDialogY + (BUTTON_HEIGHT*NUM_EQUATION_PRESETS)) {
                 equationPresetDialog = false;
+                modalViewState = 0;
             }
         }
-
-        buttonStates[15] = GuiButton((Rectangle){(float)imageDimension, (float)GetScreenHeight()-(2*BUTTON_HEIGHT), (float)controlPanelWidth, BUTTON_HEIGHT*2}, "Help & Instructions");
-
 
         // Drawing the info dialog
         if (dialogText != "") {
@@ -545,6 +556,7 @@ int gui_main () {
             DrawRectangle (left, top, 115, 40, col);
             DrawText (t, left+5, top, 15, BLACK);
         }
+
         EndDrawing();
         GuiUnlock();
     }

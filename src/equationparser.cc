@@ -6,7 +6,6 @@ using namespace std;
 
 // TODO: Modulus
 
-
 enum intermediate_token_type {
     INT_NUMBER,
     INT_LETTER,
@@ -448,6 +447,12 @@ vector<token> ep_rpConvert (vector<intermediate_token> intermediate) {
     return output;
 }
 
+/**
+ * @brief Convert a string mathematical expression into an equation class instance using Reverse Polish Notation
+ * 
+ * @param sequ String containing a mathematical expression to parse
+ * @return Pointer to an equation instance representing the input string
+ */
 equation* extract_equation (string sequ) {
     if (sequ.length() < 1) return NULL;
     string cleaned = ep_clean (sequ);
