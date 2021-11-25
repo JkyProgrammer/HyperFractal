@@ -31,7 +31,7 @@ using namespace std;
  * @param hm Hyperfractal instance from which to extract the image
  * @return Image 
  */
-Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vectors
+Image convert (hfractal_main* hm) {
     Color *pixels = (Color *)malloc((hm->resolution)*(hm->resolution)*sizeof(Color));
     for (int x = 0; x < hm->resolution; x++) {
         for (int y = 0; y < hm->resolution; y++) {
@@ -54,10 +54,13 @@ Image convert (hfractal_main* hm) { // TODO: Custom mapping between colour vecto
 // DONE: Buttons stop responding sometimes - was a multithreading issue on the image
 
 // TODO: Add comments to all the code (CURRENT)
-// TODO: Implement existing buttons
-// TODO: Add numerical zoom/offset inputs (TF)
 // TODO: Rewrite pixel distribution
 // TODO: Remove all debugging related stuff
+// TODO: Class-ify gui
+// TODO: Custom mapping between colour vectors, move into image classs
+// TODO: Add a 'jump to' dialog
+// TODO: Database system
+// TODO: PNG writing
 
 // CONGRATS! We're running a 12.21s benchmark vs 37.00s from the Java version
 // Ah, unfortunately thats now a 20s benchmark using the more precise infinity comparison
@@ -142,7 +145,7 @@ int gui_main () {
     // Configure full resolution renderer
     hm->resolution = imageDimension;
     hm->eq = equationDefault;
-    hm->eval_limit = 400;
+    hm->eval_limit = 200;
     hm->worker_threads = thread_count;
     hm->zoom = start_zoom;
     hm->offset_x = start_x_offset;
@@ -163,7 +166,7 @@ int gui_main () {
     Texture2D tex = {}; // Texture buffer for the fractal image
     bool imageNeedsUpdate = true;
     bool isRendering = false; // Indicates that we're currently rendering the full resolution image (meaning the hm configuration is locked)
-    bool isOutdatedRender = false; // Indicates that the full-res render is out of date (and thus is not showing)
+    bool isOutdatedRender = true; // Indicates that the full-res render is out of date (and thus is not showing)
     bool equationPresetDialog = false; // Is the equation preset dialog enabled
     float presetDialogX = 0.0;
     float presetDialogY = 0.0;
@@ -264,7 +267,21 @@ int gui_main () {
             sleepcp (1);
         }
 
-        if (buttonStates[3] && !isRendering) std::cout << "Save Image." << std::endl;
+        // Save Image button pressed
+        if (buttonStates[3] && !isRendering && modalViewState == 0) {
+            bool result = false;
+            if (isOutdatedRender) {
+                result = autoWriteImage (lowres_hm->img, imageType::PGM);
+            } else {
+                result = autoWriteImage (hm->img, imageType::PGM);
+            }
+            if (result) {
+                consoleText = "Image saved successfully.";
+            } else {
+                consoleText = "Image saving failed.";
+            }
+        }
+
         if (buttonStates[4] && !isRendering) std::cout << "Save Render State." << std::endl;
         if (buttonStates[5] && !isRendering) std::cout << "Load Render State." << std::endl;
         
@@ -315,10 +332,11 @@ int gui_main () {
         if ((buttonStates[13] || IsKeyDown((int)'[')) && !isRendering && !equationPresetDialog) {
             if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
                 hm->eval_limit -= 10;
+                lowres_hm->eval_limit -= 10;
             } else {
                 hm->eval_limit--;
+                lowres_hm->eval_limit--;
             }
-            lowres_hm->eval_limit = hm->eval_limit/2;
             isOutdatedRender = true;
             consoleText = "Outdated!";
             imageNeedsUpdate = true;
@@ -330,10 +348,11 @@ int gui_main () {
         if ((buttonStates[14] || IsKeyDown((int)']')) && !isRendering && !equationPresetDialog) {
             if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
                 hm->eval_limit += 10;
+                lowres_hm->eval_limit += 10;
             } else {
                 hm->eval_limit++;
+                lowres_hm->eval_limit++;
             }
-            lowres_hm->eval_limit = hm->eval_limit/2;
             isOutdatedRender = true;
             consoleText = "Outdated!";
             imageNeedsUpdate = true;

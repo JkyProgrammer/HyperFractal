@@ -19,7 +19,7 @@ public:
     int get_uncompleted ();
     bool is_done ();
     int get_ind ();
-    void write (std::string path);
+    bool write_pgm (std::string path);
 };
 
 #include <iostream>

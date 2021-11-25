@@ -28,7 +28,8 @@ image::image(int w, int h) : width(w), height(h), c_ind(0) {
     for (int i = 0; i < width*height; i++) completed[i] = 0;
 }
 
-void image::write (std::string path) {
+bool image::write_pgm (std::string path) {
+    if (!is_done()) return false;
     FILE *imgFile;
     imgFile = fopen(path.c_str(),"wb");
 
@@ -39,17 +40,12 @@ void image::write (std::string path) {
     for(int y = 0; y < height; y++){
         for(int x = 0; x < width; x++){
             uint16_t p = rgb_image[(y*width)+x];
-            //fprintf(imgFile, (char*)&x);
-            //std::cout << p << std::endl;
-            //std::cout << (p & 0b11111111) << std::endl;
-            //std::cout << (p >> 8) << std::endl << std::endl;
             fputc (p & 0b11111111, imgFile);
-            //fputc (p >> 8, imgFile);
-            //fputwc (x, imgFile);
         }
     }
 
     fclose(imgFile);
+    return true;
 }
 
 image::~image () {

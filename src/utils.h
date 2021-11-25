@@ -3,6 +3,12 @@
 
 #define NUM_EQUATION_PRESETS 7
 
+#include <string>
+#include "image.h"
+
+using namespace std;
+string equationPreset (int, bool);
+string textWrap (string, int);
 enum EQ_PRESETS {
     EQ_MANDELBROT = 1, // "(z^2)+c"
     EQ_JULIA_1 = 2, // "(z^2)+(0.285+0.01i)"
@@ -13,8 +19,10 @@ enum EQ_PRESETS {
     EQ_BURNINGSHIP_MODIFIED = 7 // "((x^2)^0.5-((y^2)^0.5)i)^2+c"
 };
 
-#include <string>
-using namespace std;
-string equationPreset (int, bool);
-string textWrap (string, int);
+enum imageType {
+    PGM
+};
+
+
+bool autoWriteImage (image* im, imageType type);
 #endif // !UTILS_H

@@ -114,7 +114,7 @@ int hfractal_main::generateImage (bool wait=true) {
 
 bool hfractal_main::write (string path) {
     std::cout << "Writing... ";
-    img->write(path);
+    img->write_pgm(path);
     std::cout << "Done." << endl;
     return 0;
 }
