@@ -4,7 +4,7 @@
 #include <vector>
 
 #ifdef _WIN32
-#include "dll.h"
+//#include "dll.h"
 #include <windows.h>
 #include <shlobj.h>
 #endif
@@ -59,7 +59,7 @@ string get_desktop_path () {
     #ifdef _WIN32
     static char path[MAX_PATH+1];
     if (SHGetSpecialFolderPathA(HWND_DESKTOP, path, CSIDL_DESKTOP, FALSE))
-        return path;
+        return string(path) + string("\\");
     else
         return "";
     #else
@@ -107,6 +107,7 @@ bool autoWriteImage (image* im, imageType type) {
 
     image_path += get_desktop_path();
     image_path += image_name;
+
 
     switch (type) {
     case PGM:
