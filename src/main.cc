@@ -1,8 +1,8 @@
 #include <iostream>
 #include <chrono>
 
-#include "hyperfractal.h"
-#include "gui.h"
+#include "hyperfractal.hh"
+#include "gui.hh"
 
 using namespace std;
 

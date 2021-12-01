@@ -4,7 +4,7 @@
 #define NUM_EQUATION_PRESETS 7
 
 #include <string>
-#include "image.h"
+#include "image.hh"
 
 using namespace std;
 string equationPreset (int, bool);

@@ -1,4 +1,4 @@
-#include "equationparser.h"
+#include "equationparser.hh"
 #include <vector>
 #include <iostream>
 

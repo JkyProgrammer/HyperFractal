@@ -1,4 +1,4 @@
-#include "fractal.h"
+#include "fractal.hh"
 
 #ifndef EQUATIONPARSER_H
 #define EQUATIONPARSER_H

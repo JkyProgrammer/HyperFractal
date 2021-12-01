@@ -1,9 +1,9 @@
-#include "gui.h"
+#include "gui.hh"
 #include <math.h>
 #include <algorithm>
 #include <iostream>
 #include <thread>
-#include "utils.h"
+#include "utils.hh"
 
 #define RAYGUI_IMPLEMENTATION
 #define RAYGUI_SUPPORT_ICONS
@@ -53,7 +53,7 @@ Image convert (hfractal_main* hm) {
 // DONE: Crash when fullscreening
 // DONE: Buttons stop responding sometimes - was a multithreading issue on the image
 
-// TODO: Add comments to all the code (CURRENT)
+// TODO: Add comments to all the code
 // TODO: Rewrite pixel distribution
 // TODO: Remove all debugging related stuff
 // TODO: Class-ify gui

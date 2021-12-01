@@ -5,9 +5,9 @@
 #include <string>
 #include <thread>
 #include <vector>
-#include "image.h"
-#include "fractal.h"
-#include "equationparser.h"
+#include "image.hh"
+#include "fractal.hh"
+#include "equationparser.hh"
 
 void sleepcp(int);
 

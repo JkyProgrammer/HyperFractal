@@ -1,5 +1,5 @@
-#include "hyperfractal.h"
-#include "utils.h"
+#include "hyperfractal.hh"
+#include "utils.hh"
 #include <iostream>
 #include <iomanip>
 #include <chrono>

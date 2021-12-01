@@ -1,5 +1,5 @@
-#include "fractal.h"
-#include "utils.h"
+#include "fractal.hh"
+#include "utils.hh"
 #include <iostream>
 #include <chrono>
 #include <stack>
