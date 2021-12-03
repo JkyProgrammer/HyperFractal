@@ -7,23 +7,23 @@
 
 using namespace std;
 
-enum token_type {
+enum TOKEN_TYPE {
     NUMBER,
     LETTER,
     OPERATION
 };
 
 struct token {
-    token_type type;
-    double numVal;
-    char otherVal;
+    TOKEN_TYPE type;
+    double num_val;
+    char other_val;
 };
 
-class equation;
+class HFractalEquation;
 
-bool is_infinity (complex<long double> comp);
+bool isInfinity (complex<long double> comp);
 
-struct timing_data {
+struct TimingData {
     chrono::microseconds d_compute;
     chrono::microseconds d_isinf;
     chrono::microseconds d_math;
@@ -32,20 +32,20 @@ struct timing_data {
     chrono::microseconds d_set;
 };
 
-class equation {
+class HFractalEquation {
 public:
-    vector<token> reversePolishVector;
+    vector<token> reverse_polish_vector;
 
-    bool isPreset = false;
+    bool is_preset = false;
     int preset = -1;
 
-    complex<long double> compute (complex<long double> z, complex<long double> c);
-    int evaluate (complex<long double> c, int limit, timing_data *d_time);
+    complex<long double> compute (complex<long double>, complex<long double>);
+    int evaluate (complex<long double>, int, TimingData*);
 
-    equation (vector<token> rpVec);
-    equation ();
+    HFractalEquation (vector<token>);
+    HFractalEquation ();
 };
 
-std::ostream & operator<<(std::ostream & Str, equation const & v);
+std::ostream & operator<<(std::ostream & Str, HFractalEquation const & v);
 
 #endif

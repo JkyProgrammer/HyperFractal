@@ -116,7 +116,10 @@
         "span": "cpp",
         "typeindex": "cpp",
         "valarray": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "source_location": "cpp",
+        "rope": "cpp",
+        "slist": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

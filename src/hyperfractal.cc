@@ -8,12 +8,12 @@
 using namespace std;
 using namespace std::chrono;
 
-void hfractal_main::thread_main () {
+void HFractalMain::threadMain () {
     long double p = 2/(zoom*resolution);
     long double q = (1/zoom)-offset_x;
     long double r = (1/zoom)+offset_y;
 
-    int next = img->get_uncompleted();
+    int next = img->getUncompleted();
     while (next != -1) {
         //auto t_a = high_resolution_clock::now();
         int x = next%resolution;
@@ -26,7 +26,7 @@ void hfractal_main::thread_main () {
         //auto t_c = high_resolution_clock::now();
         img->set (x, y, res);
         //auto t_d = high_resolution_clock::now();
-        next = img->get_uncompleted();
+        next = img->getUncompleted();
         //auto t_e = high_resolution_clock::now();
         //d_all->d_math += duration_cast<microseconds> (t_b-t_a);
         //d_all->d_evaluate += duration_cast<microseconds> (t_c-t_b);
@@ -35,7 +35,7 @@ void hfractal_main::thread_main () {
     }
 }
 
-int hfractal_main::generateImage (bool wait=true) {
+int HFractalMain::generateImage (bool wait=true) {
     std::setprecision (100);
     std::cout << "Rendering with parameters: " << std::endl;
     std::cout << "Resolution=" << resolution << std::endl;
@@ -44,12 +44,12 @@ int hfractal_main::generateImage (bool wait=true) {
     std::cout << "Zoom="; printf ("%Le", zoom); std::cout << std::endl;
     std::cout << "OffsetX="; printf ("%.70Lf", offset_x); std::cout << std::endl;
     std::cout << "OffsetY="; printf ("%.70Lf", offset_y); std::cout << std::endl;
-    std::cout << "Parsing equation: \"" << eq + "\"" << std::endl;
+    std::cout << "Parsing HFractalEquation: \"" << eq + "\"" << std::endl;
     main_equation = extract_equation (eq);
 
     if (main_equation == NULL) { std::cout << "Stopping!" << std::endl; return 1; }
 
-    // Detect if the equation matches the blueprint of a preset
+    // Detect if the HFractalEquation matches the blueprint of a preset
     preset = -1;
     for (int i = 1; i <= NUM_EQUATION_PRESETS; i++) {
         if (eq == equationPreset (i, false)) {
@@ -59,13 +59,13 @@ int hfractal_main::generateImage (bool wait=true) {
     }
     main_equation->preset = preset;
     if (preset != -1) {
-        main_equation->isPreset = true;
+        main_equation->is_preset = true;
     }
 
     if (main_equation != NULL) std::cout << *main_equation << std::endl;
-    if (img != NULL) img->~image();
-    img = new image (resolution, resolution);
-    d_all = new timing_data {
+    if (img != NULL) img->~HFractalImage();
+    img = new HFractalImage (resolution, resolution);
+    d_all = new TimingData {
         microseconds(0),
         microseconds(0),
         microseconds(0),
@@ -77,22 +77,22 @@ int hfractal_main::generateImage (bool wait=true) {
     auto t_a = high_resolution_clock::now();
     thread_pool.clear();
     for (int i = 0; i < worker_threads; i++) {
-        std::thread *t = new std::thread(&hfractal_main::thread_main, this);
+        std::thread *t = new std::thread(&HFractalMain::threadMain, this);
         thread_pool.push_back (t);
     }
 
     if (wait) {
         while (true) {
-            if (img->is_done()) break;
+            if (img->isDone()) break;
             #ifdef TERMINAL_UPDATES
-            float percent = ((float)(img->get_ind())/(float)(resolution*resolution))*100;
+            float percent = ((float)(img->getInd())/(float)(resolution*resolution))*100;
             std::cout << "\r";
             std::cout << "Working: ";
             for (int k = 2; k <= 100; k+=2) { if (k <= percent) std::cout << "█"; else std::cout << "_"; }
             std::cout << " | ";
             std::cout << round(percent) << "%";
             #endif
-            sleepcp (2);
+            crossPlatformDelay (2);
         }
         for (auto th : thread_pool) th->join();
 
@@ -112,23 +112,9 @@ int hfractal_main::generateImage (bool wait=true) {
     return 0;
 }
 
-bool hfractal_main::write (string path) {
+bool HFractalMain::write (string path) {
     std::cout << "Writing... ";
-    img->write_pgm(path);
+    img->writePGM(path);
     std::cout << "Done." << endl;
     return 0;
-}
-
-#ifdef _WIN32
-    #include <windows.h>
-#else
-    #include <unistd.h>
-#endif
-
-void sleepcp(int milliseconds) {
-    #ifdef _WIN32
-        Sleep(milliseconds);
-    #else
-        usleep(milliseconds * 1000);
-    #endif
 }

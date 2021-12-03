@@ -7,6 +7,8 @@
 //#include "dll.h"
 #include <windows.h>
 #include <shlobj.h>
+#else
+    #include <unistd.h>
 #endif
 
 /**
@@ -55,7 +57,7 @@ string textWrap (string s, int lineLength) {
 using namespace std;
 using namespace chrono;
 
-string get_desktop_path () {
+string getDesktopPath () {
     #ifdef _WIN32
     static char path[MAX_PATH+1];
     if (SHGetSpecialFolderPathA(HWND_DESKTOP, path, CSIDL_DESKTOP, FALSE))
@@ -63,12 +65,12 @@ string get_desktop_path () {
     else
         return "";
     #else
-    return string(std::getenv ("HOME")) + string("/Desktop/");
+    return string(getenv ("HOME")) + string("/Desktop/");
     #endif
 }
 
 
-bool autoWriteImage (image* im, imageType type) {
+bool autoWriteImage (HFractalImage* im, imageType type) {
     string image_name = "Fractal render from ";
 
     // Get current system time
@@ -105,16 +107,24 @@ bool autoWriteImage (image* im, imageType type) {
 
     string image_path = "";
 
-    image_path += get_desktop_path();
+    image_path += getDesktopPath();
     image_path += image_name;
 
 
     switch (type) {
     case PGM:
         image_path += ".pgm";
-        return im->write_pgm (image_path);
+        return im->writePGM (image_path);
     default:
         return false;
     }
     
+}
+
+void crossPlatformDelay(int milliseconds) {
+    #ifdef _WIN32
+        Sleep(milliseconds);
+    #else
+        usleep(milliseconds * 1000);
+    #endif
 }

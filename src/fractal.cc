@@ -6,61 +6,61 @@
 using namespace std::chrono;
 using namespace std;
 
-bool is_infinity (complex<long double> comp) {
+bool isInfinity (complex<long double> comp) {
     //return (abs(comp.real()) + abs(comp.imag())) >= 2;
     return (comp.real()*comp.real()) + (comp.imag()*comp.imag()) > (long double)4;
 }
 
-complex<long double> equation::compute (complex<long double> z, complex<long double> c) {    
-    stack<complex<long double>> valueStack;
+complex<long double> HFractalEquation::compute (complex<long double> z, complex<long double> c) {    
+    stack<complex<long double>> value_stack;
 
-    for (token t : reversePolishVector) {
+    for (token t : reverse_polish_vector) {
         if (t.type == NUMBER) {
-            valueStack.push (t.numVal);
+            value_stack.push (t.num_val);
         } else if (t.type == LETTER) {
-            switch (t.otherVal) {
+            switch (t.other_val) {
             case 'z':
-                valueStack.push (z);
+                value_stack.push (z);
                 break;
             case 'c':
-                valueStack.push (c);
+                value_stack.push (c);
                 break;
             case 'a':
-                valueStack.push (c.real());
+                value_stack.push (c.real());
                 break;
             case 'b':
-                valueStack.push (c.imag());
+                value_stack.push (c.imag());
                 break;
             case 'x':
-                valueStack.push (z.real());
+                value_stack.push (z.real());
                 break;
             case 'y':
-                valueStack.push (z.imag());
+                value_stack.push (z.imag());
                 break;
             case 'i':
-                valueStack.push (complex<long double> (0,1));
+                value_stack.push (complex<long double> (0,1));
                 break;
             default:
                 break;
             }
         } else if (t.type == OPERATION) {
-            complex<long double> v2 = valueStack.top(); valueStack.pop();
-            complex<long double> v1 = valueStack.top(); valueStack.pop();
-            switch (t.otherVal) {
+            complex<long double> v2 = value_stack.top(); value_stack.pop();
+            complex<long double> v1 = value_stack.top(); value_stack.pop();
+            switch (t.other_val) {
             case '^':
-                valueStack.push (pow (v1, v2));
+                value_stack.push (pow (v1, v2));
                 break;
             case '/':
-                valueStack.push (v1/v2);
+                value_stack.push (v1/v2);
                 break;
             case '*':
-                valueStack.push (v1*v2);
+                value_stack.push (v1*v2);
                 break;
             case '+':
-                valueStack.push (v1+v2);
+                value_stack.push (v1+v2);
                 break;
             case '-':
-                valueStack.push (v1-v2);
+                value_stack.push (v1-v2);
                 break;
             default:
                 break;
@@ -68,14 +68,14 @@ complex<long double> equation::compute (complex<long double> z, complex<long dou
         }
     }
 
-    return valueStack.top();
+    return value_stack.top();
 }
 
-int equation::evaluate (complex<long double> c, int limit, timing_data *d_time) {
+int HFractalEquation::evaluate (complex<long double> c, int limit, TimingData *d_time) {
     //microseconds d_compute = microseconds(0);
     //microseconds d_isinf = microseconds(0);
     complex<long double> last = c;
-    if (isPreset && preset == EQ_BURNINGSHIP_MODIFIED) {
+    if (is_preset && preset == EQ_BURNINGSHIP_MODIFIED) {
         last = complex<long double> (0, 0);
     }
 
@@ -83,7 +83,7 @@ int equation::evaluate (complex<long double> c, int limit, timing_data *d_time) 
     while (depth < limit) {
         //auto t_a = high_resolution_clock::now();
         // Switch between custom parsing mode and preset mode for more efficient computing of presets
-        if (!isPreset) {
+        if (!is_preset) {
             last = compute (last, c);
         } else {
             switch (preset) {
@@ -114,7 +114,7 @@ int equation::evaluate (complex<long double> c, int limit, timing_data *d_time) 
         }
         depth++;
         //auto t_b = high_resolution_clock::now();
-        bool b = is_infinity (last);
+        bool b = isInfinity (last);
         //auto t_c = high_resolution_clock::now();
         //d_compute += duration_cast<microseconds> (t_b-t_a);
         //d_isinf += duration_cast<microseconds> (t_c-t_b);
@@ -125,23 +125,23 @@ int equation::evaluate (complex<long double> c, int limit, timing_data *d_time) 
     return depth;
 }
 
-equation::equation (vector<token> rpVec) {
-    reversePolishVector = rpVec;
+HFractalEquation::HFractalEquation (vector<token> rp_vec) {
+    reverse_polish_vector = rp_vec;
 }
 
-equation::equation () {}
+HFractalEquation::HFractalEquation () {}
 
 #define OPS "+-*/^"
 
-std::ostream & operator<<(std::ostream & Str, equation const & v) { 
-    for (token t : v.reversePolishVector) {
+std::ostream & operator<<(std::ostream & Str, HFractalEquation const & v) { 
+    for (token t : v.reverse_polish_vector) {
         switch (t.type) {
         case LETTER:
         case OPERATION:
-            Str << t.otherVal;
+            Str << t.other_val;
             break;
         case NUMBER:
-            Str << t.numVal;
+            Str << t.num_val;
             break;
         default:
             break;

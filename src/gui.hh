@@ -3,5 +3,5 @@
 
 #include "hyperfractal.hh"
 
-int gui_main();
+int guiMain();
 #endif

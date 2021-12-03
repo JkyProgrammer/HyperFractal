@@ -3,7 +3,7 @@
 
 #ifndef IMAGE_H
 #define IMAGE_H
-class image {
+class HFractalImage {
 private:
     int width;
     int height;
@@ -11,22 +11,22 @@ private:
     int c_ind = 0;
     std::mutex mut;
 public:
-    image (int, int);
-    ~image ();
+    HFractalImage (int, int);
+    ~HFractalImage ();
     uint8_t * completed;
     void set (int, int, uint16_t);
     uint16_t get (int, int);
-    int get_uncompleted ();
-    bool is_done ();
-    int get_ind ();
-    bool write_pgm (std::string path);
+    int getUncompleted ();
+    bool isDone ();
+    int getInd ();
+    bool writePGM (std::string path);
 };
 
 #include <iostream>
-inline std::ostream & operator<<(std::ostream & Str, image & v) { 
+inline std::ostream & operator<<(std::ostream & Str, HFractalImage & v) { 
   std::cout << "Image :" << &v << std::endl;
-  std::cout << v.get_ind() << std::endl;
-  std::cout << v.is_done() << std::endl;
+  std::cout << v.getInd() << std::endl;
+  std::cout << v.isDone() << std::endl;
   return Str;
 }
 #endif

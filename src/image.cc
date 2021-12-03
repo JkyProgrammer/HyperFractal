@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <ostream>
 
-void image::set(int x, int y, uint16_t p) {
+void HFractalImage::set(int x, int y, uint16_t p) {
     int offset = ((y*width)+x);
     rgb_image[offset] = p;
     completed[offset] = 2;
@@ -13,7 +13,7 @@ void image::set(int x, int y, uint16_t p) {
     //mut.unlock();
 }
 
-uint16_t image::get(int x, int y) {
+uint16_t HFractalImage::get(int x, int y) {
     //mut.lock();
     //if (x >= width || x < 0) { mut.unlock(); return 0; }
     //if (y >= height || y < 0) { mut.unlock(); return 0; }
@@ -22,14 +22,14 @@ uint16_t image::get(int x, int y) {
     return rgb_image[(y*width)+x];
 }
 
-image::image(int w, int h) : width(w), height(h), c_ind(0) {
+HFractalImage::HFractalImage(int w, int h) : width(w), height(h), c_ind(0) {
     rgb_image = new uint16_t[width*height];
     completed = new uint8_t[width*height];
     for (int i = 0; i < width*height; i++) completed[i] = 0;
 }
 
-bool image::write_pgm (std::string path) {
-    if (!is_done()) return false;
+bool HFractalImage::writePGM (std::string path) {
+    if (!isDone()) return false;
     FILE *imgFile;
     imgFile = fopen(path.c_str(),"wb");
 
@@ -48,12 +48,12 @@ bool image::write_pgm (std::string path) {
     return true;
 }
 
-image::~image () {
+HFractalImage::~HFractalImage () {
     free (rgb_image);
     free (completed);
 }
 
-int image::get_uncompleted () {
+int HFractalImage::getUncompleted () {
     mut.lock();
     for (int i = c_ind; i < height*width; i++) {
         if (completed[i] == 0) {
@@ -67,7 +67,7 @@ int image::get_uncompleted () {
     return -1;
 }
 
-bool image::is_done () {
+bool HFractalImage::isDone () {
     if (width == 0 || height == 0) return false;
     for (int i = 0; i < height*width; i++) {
         if (completed[i] != 2) return false;
@@ -75,4 +75,4 @@ bool image::is_done () {
     return true;
 }
 
-int image::get_ind () {return c_ind;}
+int HFractalImage::getInd () {return c_ind;}

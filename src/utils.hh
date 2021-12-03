@@ -8,7 +8,9 @@
 
 using namespace std;
 string equationPreset (int, bool);
+
 string textWrap (string, int);
+
 enum EQ_PRESETS {
     EQ_MANDELBROT = 1, // "(z^2)+c"
     EQ_JULIA_1 = 2, // "(z^2)+(0.285+0.01i)"
@@ -23,6 +25,8 @@ enum imageType {
     PGM
 };
 
+bool autoWriteImage (HFractalImage* im, imageType type);
 
-bool autoWriteImage (image* im, imageType type);
+void crossPlatformDelay (int);
+
 #endif // !UTILS_H
