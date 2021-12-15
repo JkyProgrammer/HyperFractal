@@ -15,7 +15,6 @@
 #include "gui.hh"
 
 int main (int argc, char *argv[]) {
-
     if (argc == 8) {
         HFractalMain hm;
         hm.resolution = std::stoi (argv[1]);
@@ -35,3 +34,8 @@ int main (int argc, char *argv[]) {
         return guiMain ();
     }
 }
+
+// int main(int argc, const char** argv) {
+//     // For database module testing
+//     return 0;
+// }

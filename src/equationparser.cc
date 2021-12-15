@@ -131,6 +131,7 @@ vector<IntermediateToken> epTokenise (string s) {
     string current_token = "";
     int current_token_type = -1;
     bool is_last_run = false;
+    bool is_singular_token = false; // Informs the program whether the token is a single-char token
 
     for (int i = 0; i < s.length(); i++) {
         char current_char = s[i];
@@ -187,7 +188,8 @@ vector<IntermediateToken> epTokenise (string s) {
         }
 
         // Save the current token the token vector
-        if (char_token_type != current_token_type || is_last_run) {
+        if (char_token_type != current_token_type || is_last_run || is_singular_token) {
+            is_singular_token = false;
             if (current_token.length () > 0) {
                 IntermediateToken token;
                 switch (current_token_type) {
@@ -239,6 +241,11 @@ vector<IntermediateToken> epTokenise (string s) {
             current_token += s[i];
         }
 
+        // Mark a, b, c, x, y, z, and i as singular
+        if ((char_token_type >= 1 && char_token_type <= 3) || (char_token_type >= 6 && char_token_type <= 9)) {
+            is_singular_token = true;
+        }
+
         // If we've reached the end of the string, jump back and mark it as a last pass in order to save the current token
         if (i == s.length()-1) {
             is_last_run = true;
@@ -288,7 +295,7 @@ vector<IntermediateToken> epFixImplicitMul (vector<IntermediateToken> token_vec)
         IntermediateToken t1 = result[i];
         IntermediateToken t2 = result[i+1];
 
-        // Fix explicit multiplication within brackets
+        // Fix implicit multiplication within brackets
         if (t1.type == INT_BRACKET) {
             result[i].bracket_val = epFixImplicitMul (t1.bracket_val);
             t1 = result[i];
@@ -298,7 +305,6 @@ vector<IntermediateToken> epFixImplicitMul (vector<IntermediateToken> token_vec)
         if (!(t1.type == INT_OPERATION || t2.type == INT_OPERATION)) {
             result.erase (next(result.begin(), i));
             result.erase (next(result.begin(), i));
-
             IntermediateToken explicit_mul;
             explicit_mul.type = INT_BRACKET;
             explicit_mul.bracket_val.push_back (t1);
