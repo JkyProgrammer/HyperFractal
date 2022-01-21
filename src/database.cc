@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -16,49 +18,87 @@ std::string HFractalDatabase::forCSVInner (std::string s) {
 }
 
 HFractalDatabase::HFractalDatabase (std::string path) {
-    db_path = path;
+    int cutoff = path.find(".csv");
+    db_path = path.substr (0, cutoff);
 
-    if (!read()) 
-        if (!commit ()) throw new std::runtime_error ("unable to create database");
+    if (!read()) if (!commit ()) throw new std::runtime_error ("unable to create database");
+}
+
+long HFractalDatabase::insertConfig (HFractalConfigProfile* c) {
+    if (configs.size() > 0)
+        c->profile_id = configs.at (configs.size()-1)->profile_id + 1;
+    else
+        c->profile_id = 0;
+    configs.emplace (c->profile_id, c);
+    return c->profile_id;
+}
+
+long HFractalDatabase::insertUser (HFractalUserProfile* u) {
+    if (users.size() > 0)
+        u->user_id = users.at (users.size()-1)->user_id + 1;
+    else
+        u->user_id = 0;
+    users.emplace (u->user_id, u);
+    return u->user_id;
+}
+
+bool HFractalDatabase::removeConfig (long id) {
+    return configs.erase (id);
+}
+
+bool HFractalDatabase::removeUser (long id) {
+    return users.erase (id);
 }
 
 bool HFractalDatabase::commit () {
     string db_path_configs = db_path + "_configs.csv";
     string db_path_users = db_path + "_users.csv";
-    FILE *db_file_configs;
-    FILE *db_file_users;
-    db_file_configs = fopen(db_path_configs.c_str(),"wb");
-    db_file_users = fopen(db_path_users.c_str(),"wb");
+    ofstream db_file_configs (db_path_configs.c_str());
+    ofstream db_file_users (db_path_users.c_str());
 
-    fprintf(db_file_configs,"profile_id,x_offset,y_offset,zoom,iterations,equation,name,preview_file_address,user_id");
-    for (HFractalConfigProfile* config : configs) {
-        string line = "";
-        line += forCSV (config->profile_id) + ",";
-        line += forCSV (config->x_offset) + ",";
-        line += forCSV (config->y_offset) + ",";
-        line += forCSV (config->zoom) + ",";
-        line += forCSV (config->iterations) + ",";
-        line += forCSV (config->equation) + ",";
-        line += forCSV (config->name) + ",";
-        line += forCSV (config->preview_file_address) + ",";
-        line += forCSV (config->user_id);
-        fprintf(db_file_configs,line.c_str());
-    }
+    if (db_file_configs.is_open() && db_file_users.is_open()) {
+        db_file_configs << "profile_id,x_offset,y_offset,zoom,iterations,equation,name,preview_file_address,user_id" << endl;
+        for (auto copair : configs) {
+            HFractalConfigProfile* config = copair.second;
+            string line = "";
+            line += forCSV (config->profile_id) + ",";
+            line += forCSV (config->x_offset) + ",";
+            line += forCSV (config->y_offset) + ",";
+            line += forCSV (config->zoom) + ",";
+            line += forCSV (config->iterations) + ",";
+            line += forCSV (config->equation) + ",";
+            line += forCSV (config->name) + ",";
+            line += forCSV (config->preview_file_address) + ",";
+            line += forCSV (config->user_id);
+            db_file_configs << line.c_str() << endl;
+        }
 
-    fprintf(db_file_users,"user_id,user_name");
-    for (HFractalUserProfile* user : users) {
-        string line = "";
-        line += forCSV (user->user_id) + ",";
-        line += forCSV (user->user_name);
-        fprintf(db_file_users,line.c_str());
-    }
+        db_file_users << "user_id,user_name" << endl;
+        for (auto upair : users) {
+            HFractalUserProfile* user = upair.second;
+            string line = "";
+            line += forCSV (user->user_id) + ",";
+            line += forCSV (user->user_name);
+            db_file_users << line.c_str() << endl;
+        }
 
-    fclose(db_file_configs);
-    fclose(db_file_users);
+        db_file_configs.close();
+        db_file_users.close();
+        return true;
+    } else return false;
 }
 
 bool HFractalDatabase::read () {
-    
+    string db_path_configs = db_path + "_configs.csv";
+    string db_path_users = db_path + "_users.csv";
+    ifstream db_file_configs (db_path_configs.c_str());
+    ifstream db_file_users (db_path_users.c_str());
+
+    if (db_file_configs.is_open() && db_file_users.is_open()) {
+        // TODO: read aaaaaaaaa
+
+        return true;
+    } else return false;
 }
 
 std::string HFractalDatabase::forCSV (std::string s) {

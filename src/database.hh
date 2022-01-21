@@ -1,6 +1,7 @@
 #include <string>
 #include <vector>
-#include "../lib/qtl/qtl_sqlite.hpp"
+#include <unordered_map>
+//#include "../lib/qtl/qtl_sqlite.hpp"
 
 #ifndef DATABASE_H
 #define DATABASE_H
@@ -41,8 +42,8 @@ struct HFractalUserProfile {
 class HFractalDatabase {
 private:
     std::string db_path;
-    std::vector<HFractalConfigProfile*> configs;
-    std::vector<HFractalUserProfile*> users;
+    std::unordered_map<long, HFractalConfigProfile*> configs;
+    std::unordered_map<long, HFractalUserProfile*> users;
     static std::string forCSVInner (std::string);
 public:
     HFractalDatabase (std::string);
@@ -50,6 +51,13 @@ public:
     std::vector<std::pair<long, std::string>> getConfigDescriptions ();
     HFractalConfigProfile* getConfig (long);
     HFractalUserProfile* getUser (long);
+
+    long insertConfig (HFractalConfigProfile*);
+    long insertUser (HFractalUserProfile*);
+
+    bool removeConfig (long);
+    bool removeUser (long);
+    
     bool commit ();
     bool read ();
 
