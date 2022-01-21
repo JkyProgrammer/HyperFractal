@@ -30,21 +30,21 @@ HFractalImage::HFractalImage(int w, int h) : width(w), height(h), c_ind(0) {
 
 bool HFractalImage::writePGM (std::string path) {
     if (!isDone()) return false;
-    FILE *imgFile;
-    imgFile = fopen(path.c_str(),"wb");
+    FILE *img_file;
+    img_file = fopen(path.c_str(),"wb");
 
-    fprintf(imgFile,"P5\n");
-    fprintf(imgFile,"%d %d\n",width,height);
-    fprintf(imgFile,"255\n");
+    fprintf(img_file,"P5\n");
+    fprintf(img_file,"%d %d\n",width,height);
+    fprintf(img_file,"255\n");
 
     for(int y = 0; y < height; y++){
         for(int x = 0; x < width; x++){
             uint16_t p = rgb_image[(y*width)+x];
-            fputc (p & 0b11111111, imgFile);
+            fputc (p & 0b11111111, img_file);
         }
     }
 
-    fclose(imgFile);
+    fclose(img_file);
     return true;
 }
 

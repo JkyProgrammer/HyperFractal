@@ -6,7 +6,7 @@
  * Classes & Structs - CapitalisedCamelCase
  * Variables - snake_case
  * Functions - uncapitalisedCamelCase
- * Constants - ALL_CAPS_SNAKE_CASE
+ * Constants - SCREAMING_SNAKE_CASE
  * 
  **/
 

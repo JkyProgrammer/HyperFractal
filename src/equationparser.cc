@@ -268,7 +268,7 @@ vector<IntermediateToken> epTokenise (string s) {
                     .type = INT_OPERATION,
                     .op_val = '-'
                 });
-                while (token_vec[i+bracket_length].type != INT_OPERATION) {
+                while (i+bracket_length < token_vec.size() && token_vec[i+bracket_length].type != INT_OPERATION) {
                     bracket.bracket_val.push_back (token_vec[i+bracket_length]);
                     bracket_length++;
                 }
