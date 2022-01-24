@@ -45,6 +45,8 @@ private:
     std::unordered_map<long, HFractalConfigProfile*> configs;
     std::unordered_map<long, HFractalUserProfile*> users;
     static std::string forCSVInner (std::string);
+    std::vector<std::string> componentify (std::string);
+    std::string fixDoubleQuote (std::string);
 public:
     HFractalDatabase (std::string);
 

@@ -39,16 +39,6 @@
 int main(int argc, const char** argv) {
     // For database module testing
     HFractalDatabase db ("database.csv");
-    HFractalUserProfile* testprof = new HFractalUserProfile ();
-    testprof->user_name = "jacob";
-    std::cout << db.insertUser (testprof) << std::endl;
-    HFractalUserProfile* testprof2 = new HFractalUserProfile ();
-    testprof2->user_name = "jacob2";
-    std::cout << db.insertUser (testprof2) << std::endl;
-    HFractalUserProfile* testprof3 = new HFractalUserProfile ();
-    testprof3->user_name = "jacob3";
-    std::cout << db.insertUser (testprof3) << std::endl;
-    std::cout << db.removeUser (testprof2->user_id) << std::endl;
     db.commit();
     return 0;
 }
