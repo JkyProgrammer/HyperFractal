@@ -90,3 +90,30 @@ Following research and a brief discussion with my user, the following requiremen
 ## Project Plan
 
 <img src="workplan.jpg" style="height: 800px; width:800px;"/>
+
+## Necessarry Libraries
+
+The solution to the problem necessitates the use of a graphical user interface. For this, a GUI library is necessarry in order to produce a consistent experience across platforms.
+
+A wide range of solutions are available for this. My criteria for a package were as follows:
+* free to redistribute
+* free to use for commercial purposes
+* configurable inside another project
+* compatible with the target language, in this case C++
+* cross-platform
+* providing features such as displaying images, buttons, text
+
+The potential solutions which I identified included Qt, GTK+, wxWidgets, FLTK, BoostUI, and gtkmm. However, many of these did not fit my criteria fully, so I finally chose to use 'raylib', a standalone header-only graphics library which meets all the requiremeents I set out with.
+
+
+The C++ standard library fortunately has a built-in complex number library. However, during my analysis phase I initially experimented with configuring and using mulitple-precision complex number libraries. The complex numbers involved in generating fractals must be very precise, so I considered using arbitrary precision arithmetic libraries such as:
+* MPFR (Multiple Precision Floating-point Reliable) - provides extensible floating point data types which can be sized to any necessarry precision
+* GMP (GNU Multiple Precision) - a similar library but which determines to provide better performance
+* MPC (Multiple Precision Complex) - library which builds off of GMP to provide complex number arithmetic at arbitrary precision
+* Boost multiple precision complex - the Boost implementation of the same functionality
+
+However, I encountered a number of problems with all or most of these:
+1. They caused a huge performance hit when benchmarked compared with the C++ standard complex number library (which is to be expected with any arbitrary precision arithmetic realistically), which would cause significant problems due to the number of calculations necessarry in this project and the intended real-time nature of it.
+2. They required the target machines to have libraries installed in order to use the project and application, which also would require configuring host machines (going against the aim of the project to provide a simple, standalone, easy to install and use application)
+
+As a result I decided to stick with the built-in complex number library, the only tradeoff being the reduced maximum precision of calculations as a result. This has the effect of effectively limiting the resolution or zoom depth possible with the application, as at a certain combination of resolution and zoom, pixels will no longer be able to be uniquely identified and their complex coordinates will be rounded to the nearest floating-point number which can be stored. In order to minimise this, in my application I will aim to use the highest precision float possible (`long double` in C++).

@@ -4,4 +4,8 @@
 #include "hyperfractal.hh"
 
 int guiMain();
+
+class HFractalGui {
+// TODO
+};
 #endif
