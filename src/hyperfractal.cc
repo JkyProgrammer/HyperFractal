@@ -45,7 +45,7 @@ int HFractalMain::generateImage (bool wait=true) {
     std::cout << "OffsetX="; printf ("%.70Lf", offset_x); std::cout << std::endl;
     std::cout << "OffsetY="; printf ("%.70Lf", offset_y); std::cout << std::endl;
     std::cout << "Parsing HFractalEquation: \"" << eq + "\"" << std::endl;
-    main_equation = extract_equation (eq);
+    main_equation = HFractalEquationParser::extract_equation (eq);
 
     if (main_equation == NULL) { std::cout << "Stopping!" << std::endl; return 1; }
 

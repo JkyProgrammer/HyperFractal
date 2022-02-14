@@ -29,22 +29,19 @@ enum EP_CHECK_STATUS {
     UNSUPCHAR_ERROR
 };
 
-void coutToken (IntermediateToken);
+class HFractalEquationParser {
+private:
+    static void coutToken (IntermediateToken);
+    static std::string epClean (std::string);
+    static EP_CHECK_STATUS epCheck (std::string);
+    static std::vector<IntermediateToken> epTokenise (std::string);
+    static std::vector<IntermediateToken> epFixImplicitMul (std::vector<IntermediateToken>);
+    static std::vector<IntermediateToken> epSimplifyBidmas (std::vector<IntermediateToken>, bool);
+    static std::vector<token> epReversePolishConvert (std::vector<IntermediateToken>);
 
-std::string epClean (std::string);
-
-EP_CHECK_STATUS epCheck (std::string);
-
-std::vector<IntermediateToken> epTokenise (std::string);
-
-std::vector<IntermediateToken> epFixImplicitMul (std::vector<IntermediateToken>);
-
-std::vector<IntermediateToken> epSimplifyBidmas (std::vector<IntermediateToken>, bool);
-
-std::vector<token> epReversePolishConvert (std::vector<IntermediateToken>);
-
-HFractalEquation* extract_equation (std::string);
-
+public:
+    static HFractalEquation* extract_equation (std::string);
+};
 
 
 #endif

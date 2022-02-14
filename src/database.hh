@@ -1,6 +1,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <cstring>
 //#include "../lib/qtl/qtl_sqlite.hpp"
 
 #ifndef DATABASE_H
@@ -47,6 +48,11 @@ private:
     static std::string forCSVInner (std::string);
     std::vector<std::string> componentify (std::string);
     std::string fixDoubleQuote (std::string);
+
+    static std::string forCSV (std::string);
+    static std::string forCSV (long);
+    static std::string forCSV (int);
+    static std::string forCSV (long double);
 public:
     HFractalDatabase (std::string);
 
@@ -62,11 +68,6 @@ public:
     
     bool commit ();
     bool read ();
-
-    static std::string forCSV (std::string);
-    static std::string forCSV (long);
-    static std::string forCSV (int);
-    static std::string forCSV (long double);
 };
 
 #endif

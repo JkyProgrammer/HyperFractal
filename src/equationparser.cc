@@ -4,9 +4,8 @@
 
 using namespace std;
 
-// TODO: Modulus
 
-void coutToken (IntermediateToken t) {
+void HFractalEquationParser::coutToken (IntermediateToken t) {
     switch (t.type) {
     case INT_NUMBER:
         cout << t.num_val << endl;
@@ -35,7 +34,7 @@ void coutToken (IntermediateToken t) {
  * @param s Input string
  * @return Cleaned string
  */
-string epClean (string s) {
+string HFractalEquationParser::epClean (string s) {
     string ret_val = "";
     for (char c : s) if (c != ' ') ret_val += c;
     return ret_val;
@@ -54,7 +53,7 @@ string epClean (string s) {
  * @param s Input string
  * @return Either the reference of the first error detected or zero if no error is found
  */
-EP_CHECK_STATUS epCheck (string s) {
+EP_CHECK_STATUS HFractalEquationParser::epCheck (string s) {
     int bracket_depth = 0;
     char c_last = '\0';
     int index = 0;
@@ -126,7 +125,7 @@ EP_CHECK_STATUS epCheck (string s) {
  * @param s Input string
  * @return std::vector of tokens
  */
-vector<IntermediateToken> epTokenise (string s) {
+vector<IntermediateToken> HFractalEquationParser::epTokenise (string s) {
     vector<IntermediateToken> token_vec;
     string current_token = "";
     int current_token_type = -1;
@@ -289,7 +288,7 @@ vector<IntermediateToken> epTokenise (string s) {
  * @param token_vec Token vector to fix
  * @return Token vector with no implicit multiplication
  */
-vector<IntermediateToken> epFixImplicitMul (vector<IntermediateToken> token_vec) {
+vector<IntermediateToken> HFractalEquationParser::epFixImplicitMul (vector<IntermediateToken> token_vec) {
     vector<IntermediateToken> result = token_vec;
     for (int i = 0; i < result.size()-1; i++) {
         IntermediateToken t1 = result[i];
@@ -334,7 +333,7 @@ vector<IntermediateToken> epFixImplicitMul (vector<IntermediateToken> token_vec)
  * @param token_vec Token vector to simplify
  * @return Token vector which requires only sequential evaluation
  */
-vector<IntermediateToken> epSimplifyBidmas (vector<IntermediateToken> token_vec, bool first_half) {
+vector<IntermediateToken> HFractalEquationParser::epSimplifyBidmas (vector<IntermediateToken> token_vec, bool first_half) {
     vector<IntermediateToken> result = token_vec;
     // Recurse down brackets
     for (int i = 0; i < result.size(); i++) {
@@ -393,7 +392,7 @@ vector<IntermediateToken> epSimplifyBidmas (vector<IntermediateToken> token_vec,
  * @param intermediate Token vector to convert
  * @return Vector of proper tokens, ready to use in the expression evaluator
  */
-vector<token> epReversePolishConvert (vector<IntermediateToken> intermediate) {
+vector<token> HFractalEquationParser::epReversePolishConvert (vector<IntermediateToken> intermediate) {
     vector<token> output;
     
     IntermediateToken operation = {.op_val = '\0'};
@@ -435,7 +434,7 @@ vector<token> epReversePolishConvert (vector<IntermediateToken> intermediate) {
  * @param sequ String containing a mathematical expression to parse
  * @return Pointer to an HFractalEquation instance representing the input string
  */
-HFractalEquation* extract_equation (string sequ) {
+HFractalEquation* HFractalEquationParser::extract_equation (string sequ) {
     if (sequ.length() < 1) return NULL;
     string cleaned = epClean (sequ);
     if (epCheck (cleaned) != SUCCESS) return NULL;
