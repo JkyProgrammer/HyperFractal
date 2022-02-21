@@ -6,9 +6,14 @@
 using namespace std::chrono;
 using namespace std;
 
-bool isInfinity (complex<long double> comp) {
+bool HFractalEquation::isInfinity (complex<long double> comp) {
     //return (abs(comp.real()) + abs(comp.imag())) >= 2;
     return (comp.real()*comp.real()) + (comp.imag()*comp.imag()) > (long double)4;
+}
+
+void HFractalEquation::setPreset (int i) {
+    is_preset = (i != -1);
+    preset = i;
 }
 
 complex<long double> HFractalEquation::compute (complex<long double> z, complex<long double> c) {    
@@ -133,20 +138,20 @@ HFractalEquation::HFractalEquation () {}
 
 #define OPS "+-*/^"
 
-std::ostream & operator<<(std::ostream & Str, HFractalEquation const & v) { 
-    for (token t : v.reverse_polish_vector) {
-        switch (t.type) {
-        case LETTER:
-        case OPERATION:
-            Str << t.other_val;
-            break;
-        case NUMBER:
-            Str << t.num_val;
-            break;
-        default:
-            break;
-        }
-        //Str << endl;
-    }
-    return Str;
-}
+// std::ostream & operator<<(std::ostream & Str, HFractalEquation const & v) { 
+//     for (token t : v.reverse_polish_vector) {
+//         switch (t.type) {
+//         case LETTER:
+//         case OPERATION:
+//             Str << t.other_val;
+//             break;
+//         case NUMBER:
+//             Str << t.num_val;
+//             break;
+//         default:
+//             break;
+//         }
+//         //Str << endl;
+//     }
+//     return Str;
+// }

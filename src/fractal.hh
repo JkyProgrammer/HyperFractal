@@ -21,8 +21,6 @@ struct token {
 
 class HFractalEquation;
 
-bool isInfinity (complex<long double> comp);
-
 struct TimingData {
     chrono::microseconds d_compute;
     chrono::microseconds d_isinf;
@@ -33,11 +31,15 @@ struct TimingData {
 };
 
 class HFractalEquation {
-public:
+private:
+    static bool isInfinity (complex<long double> comp);
     vector<token> reverse_polish_vector;
 
     bool is_preset = false;
     int preset = -1;
+
+public:
+    void setPreset (int);
 
     complex<long double> compute (complex<long double>, complex<long double>);
     int evaluate (complex<long double>, int, TimingData*);
@@ -46,6 +48,6 @@ public:
     HFractalEquation ();
 };
 
-std::ostream & operator<<(std::ostream & Str, HFractalEquation const & v);
+// std::ostream & operator<<(std::ostream & Str, HFractalEquation const & v);
 
 #endif

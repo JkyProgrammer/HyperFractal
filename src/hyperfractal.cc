@@ -57,12 +57,10 @@ int HFractalMain::generateImage (bool wait=true) {
             break;
         }
     }
-    main_equation->preset = preset;
-    if (preset != -1) {
-        main_equation->is_preset = true;
-    }
+    main_equation->setPreset (preset);
+    
 
-    if (main_equation != NULL) std::cout << *main_equation << std::endl;
+    //if (main_equation != NULL) std::cout << *main_equation << std::endl;
     if (img != NULL) img->~HFractalImage();
     img = new HFractalImage (resolution, resolution);
     d_all = new TimingData {
