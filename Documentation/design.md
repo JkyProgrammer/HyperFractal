@@ -16,7 +16,6 @@ The GUI is effectively a separate module which provides the graphical interface 
 
 
 The rendering environment will be encapsulated in a class which can be instantiated to create an independent, contained environment for generating fractals. It will contain class variables which can be assigned or retreived via getters and setters. It will also provide functionality to render fractals and to parse textual equations (see below), hiding all the code necessarry to do this from anything which utilises the environment (e.g. the GUI module).
-// TODO: make HFractal class variables private
 
 The GUI environment will also be encapsulated in a class, which is host to the entire graphical system. It will be responsible for creating and managing the main application window, handling button presses and key events, and will keep track of the rendering environments (two will be used, one for the low resolution preview render, the other for the main, full-resolution render). The GUI class will contain various methods for handling presses for each button, navigation events like moving the viewport, as well as the main loop function which will manage drawing the interface each frame (this can also be broken down into separate methods). The only externally accessible method will be the GUI class's main function, which will perform setup such as intialising the class, creating the GUI and starting the graphics mainloop.
 

@@ -48,6 +48,16 @@ bool HFractalImage::writePGM (std::string path) {
     return true;
 }
 
+uint32_t HFractalImage::colourFromValue (uint16_t value, int colour_preset) {
+    uint32_t col = 0x000000ff;
+    uint8_t looped = (uint8_t)(value % 256);
+    col |= looped << (8*1); // B
+    col |= looped << (8*2); // G
+    col |= looped << (8*3); // R
+    
+    return col;
+}
+
 HFractalImage::~HFractalImage () {
     free (rgb_image);
     free (completed);

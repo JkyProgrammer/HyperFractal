@@ -69,58 +69,6 @@ string getDesktopPath () {
     #endif
 }
 
-
-bool autoWriteImage (HFractalImage* im, imageType type) {
-    string image_name = "Fractal render from ";
-
-    // Get current system time
-    auto time = system_clock::to_time_t (system_clock::now());
-    string c_time = string (ctime (&time));
-
-    // Separate ctime result into components
-    vector<string> time_components;
-    string current_component = "";
-    for (char c : c_time) {
-        if (c == ' ') {
-            time_components.push_back (current_component);
-            current_component = "";
-        } else if (c != '\n') current_component.push_back (c != ':' ? c : '.');
-    }
-    time_components.push_back (current_component);
-
-    // Get milliseconds, not part of ctime
-    system_clock::duration dur = system_clock::now().time_since_epoch();
-    seconds s = duration_cast<seconds> (dur);
-    dur -= s;
-    milliseconds ms = duration_cast<milliseconds> (dur);
-
-    // Components are in the form: dayofweek month day hour:minute:second year
-    image_name += time_components[2] + " ";
-    image_name += time_components[1] + " ";
-    image_name += time_components[4] + " ";
-    image_name += "at ";
-    image_name += time_components[3];
-    image_name += ".";
-    image_name += to_string(ms.count());
-
-    cout << image_name << endl;
-
-    string image_path = "";
-
-    image_path += getDesktopPath();
-    image_path += image_name;
-
-
-    switch (type) {
-    case PGM:
-        image_path += ".pgm";
-        return im->writePGM (image_path);
-    default:
-        return false;
-    }
-    
-}
-
 void crossPlatformDelay(int milliseconds) {
     #ifdef _WIN32
         Sleep(milliseconds);

@@ -21,12 +21,12 @@ enum EQ_PRESETS {
     EQ_BURNINGSHIP_MODIFIED = 7 // "((x^2)^0.5-((y^2)^0.5)i)^2+c"
 };
 
-enum imageType {
+enum IMAGE_TYPE {
     PGM
 };
 
-bool autoWriteImage (HFractalImage* im, imageType type);
-
 void crossPlatformDelay (int);
+
+string getDesktopPath ();
 
 #endif // !UTILS_H

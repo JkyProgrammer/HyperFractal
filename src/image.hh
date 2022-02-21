@@ -20,6 +20,9 @@ public:
     bool isDone ();
     int getInd ();
     bool writePGM (std::string path);
+
+    static uint32_t colourFromValue (uint16_t, int);
+    static const uint32_t BLACK = 0x000000ff;
 };
 
 #include <iostream>

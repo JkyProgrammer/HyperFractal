@@ -32,18 +32,18 @@ using namespace std;
  * @return Image 
  */
 Image convert (HFractalMain* hm) {
-    Color *pixels = (Color *)malloc((hm->resolution)*(hm->resolution)*sizeof(Color));
-    for (int x = 0; x < hm->resolution; x++) {
-        for (int y = 0; y < hm->resolution; y++) {
-            int v = hm->img->get(x,y);
-            pixels[(y*hm->resolution)+x] = (v == hm->eval_limit) ? BLACK : ColorFromHSV(v * 2, 0.5, 0.75);
-            if (hm->img->completed[(y*hm->resolution)+x] != 2) pixels[(y*hm->resolution)+x].a = 0;
-        }
-    }
+    int size = hm->getResolution();
+    uint32_t *data = hm->getRawImage(0);
+    Color *pixels = (Color *)malloc (size*size*sizeof(Color));
+    for (int i = 0; i < size*size; i++)
+        pixels[i] = (Color) {(unsigned char)((data[i] & 0xff000000) >> (8*3)),
+                             (unsigned char)((data[i] & 0x00ff0000) >> (8*2)),
+                             (unsigned char)((data[i] & 0x0000ff00) >> (8*1)),
+                             (unsigned char)(data[i] & 0x000000ff)};
     Image img = {
         .data = pixels,
-        .width = hm->resolution,
-        .height = hm->resolution,
+        .width = size,
+        .height = size,
         .mipmaps = 1,
         .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
     };
@@ -145,22 +145,22 @@ int guiMain () {
     string equation_default = equationPreset (EQ_MANDELBROT, false);
 
     // Configure full resolution renderer
-    hm->resolution = image_dimension;
-    hm->eq = equation_default;
-    hm->eval_limit = 200;
-    hm->worker_threads = thread_count;
-    hm->zoom = start_zoom;
-    hm->offset_x = start_x_offset;
-    hm->offset_y = start_y_offset;
+    hm->setResolution (image_dimension);
+    hm->setEquation (equation_default);
+    hm->setEvalLimit (200);
+    hm->setWorkerThreads (thread_count);
+    hm->setZoom (start_zoom);
+    hm->setOffsetX (start_x_offset);
+    hm->setOffsetY (start_y_offset);
 
     // Configure preivew renderer
-    lowres_hm->resolution = 64;
-    lowres_hm->eq = equation_default;
-    lowres_hm->eval_limit = 200;
-    lowres_hm->worker_threads = thread_count/2;
-    lowres_hm->zoom = start_zoom;
-    lowres_hm->offset_x = start_x_offset;
-    lowres_hm->offset_y = start_y_offset;
+    lowres_hm->setResolution (128);
+    lowres_hm->setEquation (equation_default);
+    lowres_hm->setEvalLimit (200);
+    lowres_hm->setWorkerThreads (thread_count/2);
+    lowres_hm->setZoom (start_zoom);
+    lowres_hm->setOffsetX (start_x_offset);
+    lowres_hm->setOffsetY (start_y_offset);
     
     // Declare states and variables for carrying data between mainloop passes
     bool button_states[BUTTON_NUM_TOTAL] = {false}; // The click states of all the buttons
@@ -191,7 +191,7 @@ int guiMain () {
         if (IsWindowResized()) {
             image_dimension = std::min(GetScreenWidth()-CONTROL_MIN_WIDTH, GetScreenHeight());
             control_panel_width = GetScreenWidth()-image_dimension;
-            if (!is_rendering) { hm->resolution = image_dimension;}
+            if (!is_rendering) { hm->setResolution(image_dimension); }
             else needs_to_update_resolution = true;
         }
         
@@ -200,12 +200,14 @@ int guiMain () {
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !is_rendering) {
                 Vector2 mpos = GetMousePosition();
                 if (mpos.x <= image_dimension && mpos.y <= image_dimension) {
-                    long double change_in_x = (long double)((mpos.x/(image_dimension/2))-1)/hm->zoom;
-                    long double change_in_y = (long double)((mpos.y/(image_dimension/2))-1)/hm->zoom;
-                    lowres_hm->offset_x += change_in_x;
-                    lowres_hm->offset_y -= change_in_y;
-                    hm->offset_x += change_in_x;
-                    hm->offset_y -= change_in_y;
+                    long double change_in_x = (long double)((mpos.x/(image_dimension/2))-1)/hm->getZoom();
+                    long double change_in_y = (long double)((mpos.y/(image_dimension/2))-1)/hm->getZoom();
+                    long double new_offset_x = hm->getOffsetX() + change_in_x;
+                    long double new_offset_y = hm->getOffsetY() - change_in_y;
+                    lowres_hm->setOffsetX (new_offset_x);
+                    lowres_hm->setOffsetY (new_offset_y);
+                    hm->setOffsetX (new_offset_x);
+                    hm->setOffsetY (new_offset_y);
                     is_outdated_render = true;
                     console_text = "Outdated!";
                     image_needs_update = true;
@@ -222,7 +224,7 @@ int guiMain () {
             std::cout << "Rerendering..." << std::endl;
             is_rendering = true;
             lowres_hm->generateImage(true);
-            if (lowres_hm->main_equation != NULL) {
+            if (lowres_hm->isValidEquation()) {
                 is_outdated_render = true;
                 console_text = "Rendering...";
                 hm->generateImage(false);
@@ -236,12 +238,13 @@ int guiMain () {
 
         // Zoom in button pressed
         if (button_states[1] && !is_rendering) {
-            if (lowres_hm->zoom <= SCALE_DEPTH_LIMIT) {
+            if (lowres_hm->getZoom() <= SCALE_DEPTH_LIMIT) {
                 is_outdated_render = true;
                 console_text = "Outdated!";
                 image_needs_update = true;
-                lowres_hm->zoom *= SCALE_STEP_FACTOR;
-                hm->zoom *= SCALE_STEP_FACTOR;
+                long double new_zoom = hm->getZoom() * SCALE_STEP_FACTOR;
+                lowres_hm->setZoom (new_zoom);
+                hm->setZoom (new_zoom);
                 lowres_hm->generateImage (true);
             } else dialog_text = "Zoom precision limit reached";
             crossPlatformDelay (1);
@@ -252,8 +255,9 @@ int guiMain () {
             is_outdated_render = true;
             console_text = "Outdated!";
             image_needs_update = true;
-            lowres_hm->zoom /= SCALE_STEP_FACTOR;
-            hm->zoom /= SCALE_STEP_FACTOR;
+            long double new_zoom = hm->getZoom() / SCALE_STEP_FACTOR;
+            lowres_hm->setZoom (new_zoom);
+            hm->setZoom (new_zoom);
             lowres_hm->generateImage (true);
             crossPlatformDelay (1);
         }
@@ -263,8 +267,8 @@ int guiMain () {
             is_outdated_render = true;
             console_text = "Outdated!";
             image_needs_update = true;
-            lowres_hm->zoom = 1.0;
-            hm->zoom = 1.0;
+            lowres_hm->setZoom (1.0);
+            hm->setZoom (1.0);
             lowres_hm->generateImage (true);
             crossPlatformDelay (1);
         }
@@ -273,9 +277,9 @@ int guiMain () {
         if (button_states[3] && !is_rendering && modal_view_state == 0) {
             bool result = false;
             if (is_outdated_render) {
-                result = autoWriteImage (lowres_hm->img, imageType::PGM);
+                result = lowres_hm->autoWriteImage(IMAGE_TYPE::PGM);
             } else {
-                result = autoWriteImage (hm->img, imageType::PGM);
+                result = hm->autoWriteImage (IMAGE_TYPE::PGM);
             }
             if (result) {
                 console_text = "Image saved successfully.";
@@ -289,8 +293,9 @@ int guiMain () {
         
         // Movement buttons pressed
         if ((button_states[6] || IsKeyDown(KEY_UP)) && !is_rendering) {
-            hm->offset_y += MOVE_STEP_FACTOR/hm->zoom;
-            lowres_hm->offset_y += MOVE_STEP_FACTOR/hm->zoom;
+            long double new_offset = hm->getOffsetY() + (MOVE_STEP_FACTOR/hm->getZoom());
+            hm->setOffsetY (new_offset);
+            lowres_hm->setOffsetY (new_offset);
             is_outdated_render = true;
             console_text = "Outdated!";
             image_needs_update = true;
@@ -298,8 +303,9 @@ int guiMain () {
             crossPlatformDelay (1);
         }
         if ((button_states[7] || IsKeyDown(KEY_LEFT)) && !is_rendering) {
-            hm->offset_x -= MOVE_STEP_FACTOR/hm->zoom;
-            lowres_hm->offset_x -= MOVE_STEP_FACTOR/hm->zoom;
+            long double new_offset = hm->getOffsetX() - (MOVE_STEP_FACTOR/hm->getZoom());
+            hm->setOffsetX (new_offset);
+            lowres_hm->setOffsetX (new_offset);
             is_outdated_render = true;
             console_text = "Outdated!";
             image_needs_update = true;
@@ -307,8 +313,9 @@ int guiMain () {
             crossPlatformDelay (1);
         }
         if ((button_states[8] || IsKeyDown(KEY_RIGHT)) && !is_rendering) {
-            hm->offset_x += MOVE_STEP_FACTOR/hm->zoom;
-            lowres_hm->offset_x += MOVE_STEP_FACTOR/hm->zoom;
+            long double new_offset = hm->getOffsetX() + (MOVE_STEP_FACTOR/hm->getZoom());
+            hm->setOffsetX (new_offset);
+            lowres_hm->setOffsetX (new_offset);
             is_outdated_render = true;
             console_text = "Outdated!";
             image_needs_update = true;
@@ -316,8 +323,9 @@ int guiMain () {
             crossPlatformDelay (1);
         }
         if ((button_states[9] || IsKeyDown(KEY_DOWN)) && !is_rendering) {
-            hm->offset_y -= MOVE_STEP_FACTOR/hm->zoom;
-            lowres_hm->offset_y -= MOVE_STEP_FACTOR/hm->zoom;
+            long double new_offset = hm->getOffsetY() - (MOVE_STEP_FACTOR/hm->getZoom());
+            hm->setOffsetY (new_offset);
+            lowres_hm->setOffsetY (new_offset);
             is_outdated_render = true;
             console_text = "Outdated!";
             image_needs_update = true;
@@ -332,13 +340,14 @@ int guiMain () {
 
         // Decrease eval limit button pressed
         if ((button_states[13] || IsKeyDown((int)'[')) && !is_rendering && !equation_preset_dialog) {
+            int new_el = hm->getEvalLimit();
             if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
-                hm->eval_limit -= 10;
-                lowres_hm->eval_limit -= 10;
+                new_el -= 10;
             } else {
-                hm->eval_limit--;
-                lowres_hm->eval_limit--;
+                new_el--;
             }
+            hm->setEvalLimit (new_el);
+            lowres_hm->setEvalLimit (new_el);
             is_outdated_render = true;
             console_text = "Outdated!";
             image_needs_update = true;
@@ -348,13 +357,14 @@ int guiMain () {
 
         // Increase eval limit button pressed
         if ((button_states[14] || IsKeyDown((int)']')) && !is_rendering && !equation_preset_dialog) {
+            int new_el = hm->getEvalLimit();
             if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
-                hm->eval_limit += 10;
-                lowres_hm->eval_limit += 10;
+                new_el += 10;
             } else {
-                hm->eval_limit++;
-                lowres_hm->eval_limit++;
+                new_el++;
             }
+            hm->setEvalLimit (new_el);
+            lowres_hm->setEvalLimit (new_el);
             is_outdated_render = true;
             console_text = "Outdated!";
             image_needs_update = true;
@@ -373,36 +383,36 @@ int guiMain () {
 
         // Image updating code
         if (image_needs_update) {
-            if (hm->img->isDone() && !is_outdated_render) {
+            if (!hm->getIsRendering() && !is_outdated_render) {
                 UnloadImage (buffer_image);
                 UnloadTexture (buffer_texture);
                 buffer_image = convert (hm);
                 is_rendering = false;
                 console_text = "Rendering done.";
                 buffer_texture = LoadTextureFromImage(buffer_image);
-                if (needs_to_update_resolution) { hm->resolution = image_dimension; cout << "set finally!" << endl; }
-            } else if (lowres_hm->img->isDone()) {
+                if (needs_to_update_resolution) { hm->setResolution(image_dimension); }
+            } else if (!lowres_hm->getIsRendering()) {
                 UnloadImage (buffer_image);
                 UnloadTexture (buffer_texture);
                 buffer_image = convert (lowres_hm);
-                ImageResize (&buffer_image, hm->resolution, hm->resolution);
+                ImageResize (&buffer_image, hm->getResolution(), hm->getResolution());
                 buffer_texture = LoadTextureFromImage(buffer_image);
             }
             image_needs_update = false;
         }
         if (is_rendering) {
             console_text = "Rendering: ";
-            percent = round(((float)(hm->img->getInd())/(float)(hm->resolution*hm->resolution))*100);
+            percent = round(hm->getImageCompletionPercentage());
             console_text += std::to_string(percent);
             console_text += "%";
-            if (hm->img->isDone()) {
+            if (!hm->getIsRendering()) {
                 is_rendering = false;
                 image_needs_update = true;
                 is_outdated_render = false;
             } else {
                 Image tmp = convert (hm); // Convert the current render result into an HFractalImage
                 // Write that over the HFractalImage buffer
-                ImageDraw (&buffer_image, tmp, (Rectangle){0,0,(float)hm->resolution,(float)hm->resolution}, (Rectangle){0,0,(float)hm->resolution,(float)hm->resolution}, WHITE);
+                ImageDraw (&buffer_image, tmp, (Rectangle){0,0,(float)hm->getResolution(),(float)hm->getResolution()}, (Rectangle){0,0,(float)hm->getResolution(),(float)hm->getResolution()}, WHITE);
                 UnloadImage (tmp); // Unload the old HFractalImage
                 UnloadTexture (buffer_texture); // Unload the old texture
                 buffer_texture = LoadTextureFromImage(buffer_image); // Reinitialise the texture from the HFractalImage
@@ -455,8 +465,8 @@ int guiMain () {
         int key = GetCharPressed();
         if ((((int)'a' <= key && key <= (int)'c') || ((int)'x' <= key && key <= (int)'z') || key == 122 || (key >= 48 && key <= 57) || key == 94 || (key >= 40 && key <= 43) || key == 45 || key == 46 || key == 47 || key == 'i') && !is_rendering) {
             equation_tmp += (char)key;
-            hm->eq = equation_tmp;
-            lowres_hm->eq = equation_tmp;
+            hm->setEquation (equation_tmp);
+            lowres_hm->setEquation (equation_tmp);
             if (lowres_hm->generateImage (true)) console_text = "Invalid HFractalEquation input";
             else {
                 is_outdated_render = true;
@@ -465,8 +475,8 @@ int guiMain () {
             }
         } else if (GetKeyPressed () == KEY_BACKSPACE && !is_rendering && equation_tmp.length() > 0) {
             equation_tmp.pop_back();
-            hm->eq = equation_tmp;
-            lowres_hm->eq = equation_tmp;
+            hm->setEquation(equation_tmp);
+            lowres_hm->setEquation(equation_tmp);
             if (lowres_hm->generateImage (true)) console_text = "Invalid HFractalEquation input";
             else {
                 is_outdated_render = true;
@@ -485,7 +495,7 @@ int guiMain () {
         button_states[13] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/4, BUTTON_HEIGHT}, "<");
         button_states[14] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width/4)*3, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/4, BUTTON_HEIGHT}, ">");
         char evalLimString[16];
-        sprintf (evalLimString, "%d (%d)", hm->eval_limit, lowres_hm->eval_limit);
+        sprintf (evalLimString, "%d (%d)", hm->getEvalLimit(), lowres_hm->getEvalLimit());
         GuiTextBox ((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, evalLimString, 1, false);
         button_offset++;
         
@@ -506,8 +516,8 @@ int guiMain () {
                     equation_preset_dialog = false;
                     modal_view_state = 0;
                     equation_tmp = equationPreset (e, false);
-                    hm->eq = equation_tmp;
-                    lowres_hm->eq = equation_tmp;
+                    hm->setEquation (equation_tmp);
+                    lowres_hm->setEquation (equation_tmp);
                     if (lowres_hm->generateImage (true)) console_text = "Invalid HFractalEquation input";
                     else {
                         is_outdated_render = true;
@@ -569,8 +579,8 @@ int guiMain () {
             float top = GetMouseY()+15;
             Color col {250, 250, 250, 200};
             
-            long double location_x = hm->offset_x + ((long double)(((long double)GetMouseX()/(image_dimension/2))-1))/hm->zoom;
-            long double location_y = hm->offset_y - ((long double)(((long double)GetMouseY()/(image_dimension/2))-1))/hm->zoom;
+            long double location_x = hm->getOffsetX() + ((long double)(((long double)GetMouseX()/(image_dimension/2))-1))/hm->getZoom();
+            long double location_y = hm->getOffsetY() - ((long double)(((long double)GetMouseY()/(image_dimension/2))-1))/hm->getZoom();
             char t[142];
             sprintf (t, "%.10Lf\n%.10Lf", location_x, location_y);
             DrawRectangle (left, top, 115, 40, col);
