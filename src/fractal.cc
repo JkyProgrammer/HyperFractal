@@ -7,7 +7,6 @@ using namespace std::chrono;
 using namespace std;
 
 bool HFractalEquation::isInfinity (complex<long double> comp) {
-    //return (abs(comp.real()) + abs(comp.imag())) >= 2;
     return (comp.real()*comp.real()) + (comp.imag()*comp.imag()) > (long double)4;
 }
 
@@ -76,9 +75,7 @@ complex<long double> HFractalEquation::compute (complex<long double> z, complex<
     return value_stack.top();
 }
 
-int HFractalEquation::evaluate (complex<long double> c, int limit, TimingData *d_time) {
-    //microseconds d_compute = microseconds(0);
-    //microseconds d_isinf = microseconds(0);
+int HFractalEquation::evaluate (complex<long double> c, int limit) {
     complex<long double> last = c;
     if (is_preset && preset == EQ_BURNINGSHIP_MODIFIED) {
         last = complex<long double> (0, 0);
@@ -86,7 +83,6 @@ int HFractalEquation::evaluate (complex<long double> c, int limit, TimingData *d
 
     int depth = 0;
     while (depth < limit) {
-        //auto t_a = high_resolution_clock::now();
         // Switch between custom parsing mode and preset mode for more efficient computing of presets
         if (!is_preset) {
             last = compute (last, c);
@@ -118,15 +114,9 @@ int HFractalEquation::evaluate (complex<long double> c, int limit, TimingData *d
             }
         }
         depth++;
-        //auto t_b = high_resolution_clock::now();
         bool b = isInfinity (last);
-        //auto t_c = high_resolution_clock::now();
-        //d_compute += duration_cast<microseconds> (t_b-t_a);
-        //d_isinf += duration_cast<microseconds> (t_c-t_b);
         if (b) break;
     }
-    //d_time->d_compute += d_compute;
-    //d_time->d_isinf += d_isinf;
     return depth;
 }
 
@@ -135,8 +125,6 @@ HFractalEquation::HFractalEquation (vector<token> rp_vec) {
 }
 
 HFractalEquation::HFractalEquation () {}
-
-#define OPS "+-*/^"
 
 // std::ostream & operator<<(std::ostream & Str, HFractalEquation const & v) { 
 //     for (token t : v.reverse_polish_vector) {

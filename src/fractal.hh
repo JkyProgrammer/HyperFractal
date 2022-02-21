@@ -19,17 +19,6 @@ struct token {
     char other_val;
 };
 
-class HFractalEquation;
-
-struct TimingData {
-    chrono::microseconds d_compute;
-    chrono::microseconds d_isinf;
-    chrono::microseconds d_math;
-    chrono::microseconds d_evaluate;
-    chrono::microseconds d_get;
-    chrono::microseconds d_set;
-};
-
 class HFractalEquation {
 private:
     static bool isInfinity (complex<long double> comp);
@@ -42,7 +31,7 @@ public:
     void setPreset (int);
 
     complex<long double> compute (complex<long double>, complex<long double>);
-    int evaluate (complex<long double>, int, TimingData*);
+    int evaluate (complex<long double>, int);
 
     HFractalEquation (vector<token>);
     HFractalEquation ();

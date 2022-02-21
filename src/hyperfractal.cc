@@ -15,23 +15,14 @@ void HFractalMain::threadMain () {
 
     int next = img->getUncompleted();
     while (next != -1) {
-        //auto t_a = high_resolution_clock::now();
         int x = next%resolution;
         int y = next/resolution;
         long double a = (p*x) - q;
         long double b = r - (p*y);
-        //auto t_b = high_resolution_clock::now();
         complex<long double> c = complex<long double> (a,b);
-        int res = (main_equation->evaluate (c, eval_limit, d_all));
-        //auto t_c = high_resolution_clock::now();
+        int res = (main_equation->evaluate (c, eval_limit));
         img->set (x, y, res);
-        //auto t_d = high_resolution_clock::now();
         next = img->getUncompleted();
-        //auto t_e = high_resolution_clock::now();
-        //d_all->d_math += duration_cast<microseconds> (t_b-t_a);
-        //d_all->d_evaluate += duration_cast<microseconds> (t_c-t_b);
-        //d_all->d_set += duration_cast<microseconds> (t_d-t_c);
-        //d_all->d_get += duration_cast<microseconds> (t_e-t_d);
     }
 }
 
@@ -63,14 +54,6 @@ int HFractalMain::generateImage (bool wait=true) {
     //if (main_equation != NULL) std::cout << *main_equation << std::endl;
     if (img != NULL) img->~HFractalImage();
     img = new HFractalImage (resolution, resolution);
-    d_all = new TimingData {
-        microseconds(0),
-        microseconds(0),
-        microseconds(0),
-        microseconds(0),
-        microseconds(0),
-        microseconds(0)
-    };
 
     auto t_a = high_resolution_clock::now();
     thread_pool.clear();
@@ -94,17 +77,6 @@ int HFractalMain::generateImage (bool wait=true) {
         }
         for (auto th : thread_pool) th->join();
 
-        auto t_b = high_resolution_clock::now();
-
-        cout << "Timing report:" << endl;
-        cout << "Total          " << duration_cast<microseconds>(t_b-t_a).count() << endl;
-        cout << "Math           " << d_all->d_math.count() << endl;
-        cout << "Evaluation     " << d_all->d_evaluate.count() << endl;
-        cout << "   Compute     " << d_all->d_compute.count() << endl;
-        cout << "   Is Infinity " << d_all->d_isinf.count() << endl;
-        cout << "Set Pixel      " << d_all->d_set.count() << endl;
-        cout << "Get Pixel      " << d_all->d_get.count() << endl;
-        cout << "END" << endl;
     }
     std::cout << "Rendering done." << std::endl;
     return 0;

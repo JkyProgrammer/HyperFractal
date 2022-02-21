@@ -12,7 +12,6 @@
 
 class HFractalMain {
 public:
-    TimingData *d_all;
     int resolution = 1;
     long double offset_x = 0;
     long double offset_y = 0;
