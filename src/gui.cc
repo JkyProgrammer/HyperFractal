@@ -33,7 +33,7 @@ using namespace std;
  */
 Image convert (HFractalMain* hm) {
     int size = hm->getResolution();
-    uint32_t *data = hm->getRawImage(0);
+    uint32_t *data = hm->getRawImage(1);
     Color *pixels = (Color *)malloc (size*size*sizeof(Color));
     for (int i = 0; i < size*size; i++)
         pixels[i] = (Color) {(unsigned char)((data[i] & 0xff000000) >> (8*3)),

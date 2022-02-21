@@ -35,12 +35,13 @@ bool HFractalImage::writePGM (std::string path) {
 
     fprintf(img_file,"P5\n");
     fprintf(img_file,"%d %d\n",width,height);
-    fprintf(img_file,"255\n");
+    fprintf(img_file,"511\n");
 
     for(int y = 0; y < height; y++){
         for(int x = 0; x < width; x++){
             uint16_t p = rgb_image[(y*width)+x];
-            fputc (p & 0b11111111, img_file);
+            fputc (p & 0xff00, img_file);
+            fputc (p & 0x00ff, img_file);
         }
     }
 
@@ -50,10 +51,18 @@ bool HFractalImage::writePGM (std::string path) {
 
 uint32_t HFractalImage::colourFromValue (uint16_t value, int colour_preset) {
     uint32_t col = 0x000000ff;
-    uint8_t looped = (uint8_t)(value % 256);
-    col |= looped << (8*1); // B
-    col |= looped << (8*2); // G
-    col |= looped << (8*3); // R
+    if (colour_preset == 0) {
+        uint8_t looped = (uint8_t)(value % 256);
+        col |= looped << (8*1); // B
+        col |= looped << (8*2); // G
+        col |= looped << (8*3); // R
+    } else if (colour_preset == 1) {
+        uint8_t looped = 255-(uint8_t)(value % 256);
+        col |= looped << (8*1); // B
+        col |= looped << (8*2); // G
+        col |= looped << (8*3); // R
+    }
+    
     
     return col;
 }
