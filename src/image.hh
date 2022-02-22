@@ -3,26 +3,30 @@
 
 #ifndef IMAGE_H
 #define IMAGE_H
+
+// Class containing information about an image currently being generated
 class HFractalImage {
 private:
-    int width;
-    int height;
-    uint16_t * rgb_image;
-    int c_ind = 0;
-    std::mutex mut;
-public:
-    HFractalImage (int, int);
-    ~HFractalImage ();
-    uint8_t * completed;
-    void set (int, int, uint16_t);
-    uint16_t get (int, int);
-    int getUncompleted ();
-    bool isDone ();
-    int getInd ();
-    bool writePGM (std::string path);
+    int width; // Width of the image
+    int height; // Heigh of the image
+    uint16_t * data_image; // Computed data values of the image
+    int c_ind = 0; // Index of the next pixel to be sent out to a rendering thread
+    std::mutex mut; // Mutex object used to lock class resources during multi-threading events
 
-    static uint32_t colourFromValue (uint16_t, int);
-    static const uint32_t BLACK = 0x000000ff;
+public:
+    HFractalImage (int, int); // Constructor, creates a new image buffer of the specified size
+    ~HFractalImage (); // Destructor, destroys and deallocates resources used in the current image
+    
+    void set (int, int, uint16_t); // Set the value of a pixel
+    uint16_t get (int, int); // Get the value of a pixel
+    uint8_t * completed; // Stores the completion status of each pixel, 0 = not computed, 1 = in progress, 2 = computed
+    int getUncompleted (); // Get the index of an uncomputed pixel, to be sent to a rendering thread, and update completion data
+    bool isDone (); // Check if the image has been completed or not
+    int getInd (); // Get the current completion index
+    bool writePGM (std::string); // Write out the contents of the data buffer to a simple image file, PGM format, with the given path
+
+    static uint32_t colourFromValue (uint16_t, int); // Convert a computed value into a 32 bit RGBA colour value, using the specified palette
+    static const uint32_t BLACK = 0x000000ff; // Colour constant for black
 };
 
 #include <iostream>

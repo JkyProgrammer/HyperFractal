@@ -94,7 +94,7 @@ HFractalMain::HFractalMain () {
     img = NULL;
 }
 
-uint32_t* HFractalMain::getRawImage (int colour_preset) {
+uint32_t* HFractalMain::getRGBAImage (int colour_preset) {
     if (img == NULL) {
         return (uint32_t *)malloc(0);
     }

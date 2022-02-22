@@ -6,7 +6,7 @@
 
 void HFractalImage::set(int x, int y, uint16_t p) {
     int offset = ((y*width)+x);
-    rgb_image[offset] = p;
+    data_image[offset] = p;
     completed[offset] = 2;
     //mut.lock(); // ~NOTE: DISABLED FOR PERFORMANCE~
     c_ind++;
@@ -17,13 +17,16 @@ uint16_t HFractalImage::get(int x, int y) {
     //mut.lock();
     //if (x >= width || x < 0) { mut.unlock(); return 0; }
     //if (y >= height || y < 0) { mut.unlock(); return 0; }
-    //uint16_t v = rgb_image[(y*width)+x];
+    //uint16_t v = data_image[(y*width)+x];
     //mut.unlock();
-    return rgb_image[(y*width)+x];
+    return data_image[(y*width)+x];
 }
 
-HFractalImage::HFractalImage(int w, int h) : width(w), height(h), c_ind(0) {
-    rgb_image = new uint16_t[width*height];
+HFractalImage::HFractalImage(int w, int h) {
+    width = w;
+    height = h;
+    c_ind = 0; 
+    data_image = new uint16_t[width*height];
     completed = new uint8_t[width*height];
     for (int i = 0; i < width*height; i++) completed[i] = 0;
 }
@@ -39,7 +42,7 @@ bool HFractalImage::writePGM (std::string path) {
 
     for(int y = 0; y < height; y++){
         for(int x = 0; x < width; x++){
-            uint16_t p = rgb_image[(y*width)+x];
+            uint16_t p = data_image[(y*width)+x];
             fputc (p & 0xff00, img_file);
             fputc (p & 0x00ff, img_file);
         }
@@ -68,21 +71,23 @@ uint32_t HFractalImage::colourFromValue (uint16_t value, int colour_preset) {
 }
 
 HFractalImage::~HFractalImage () {
-    free (rgb_image);
+    free (data_image);
     free (completed);
 }
 
 int HFractalImage::getUncompleted () {
+    if (c_ind >= height*width) return -1;
     mut.lock();
     for (int i = c_ind; i < height*width; i++) {
         if (completed[i] == 0) {
-            
             completed[i] = 1;
+            c_ind = i-1;
             mut.unlock();
             return i;
         }
     }
     mut.unlock();
+    c_ind = height*width;
     return -1;
 }
 

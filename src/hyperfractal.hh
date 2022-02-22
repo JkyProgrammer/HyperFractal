@@ -18,11 +18,15 @@ private:
     long double offset_x;
     long double offset_y;
     long double zoom;
+
     std::string eq;
+    HFractalEquation *main_equation;
+
     int worker_threads;
     int eval_limit;
+
     HFractalImage *img = new HFractalImage(0,0);
-    HFractalEquation *main_equation;
+
     std::vector<std::thread*> thread_pool;
     std::map<std::thread::id, bool> thread_completion;
     bool is_rendering = false;
@@ -60,7 +64,7 @@ public:
 
     bool getIsRendering() { return /*getImageCompletionPercentage() < 100*/ is_rendering; }
 
-    uint32_t* getRawImage (int);
+    uint32_t* getRGBAImage (int);
 
     float getImageCompletionPercentage ();
 
