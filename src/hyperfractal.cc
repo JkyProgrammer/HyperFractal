@@ -24,7 +24,11 @@ void HFractalMain::threadMain () {
         img->set (x, y, res);
         next = img->getUncompleted();
     }
-    is_rendering = false; // TODO: Cleaner
+    thread_completion[std::this_thread::get_id()] = true;
+    
+    bool is_incomplete = false;
+    for (auto p : thread_completion) is_incomplete |= !p.second;
+    if (!is_incomplete) is_rendering = false;
 }
 
 int HFractalMain::generateImage (bool wait=true) {
@@ -51,15 +55,15 @@ int HFractalMain::generateImage (bool wait=true) {
     }
     main_equation->setPreset (preset);
     
-
-    //if (main_equation != NULL) std::cout << *main_equation << std::endl;
     if (img != NULL) img->~HFractalImage();
     img = new HFractalImage (resolution, resolution);
 
     thread_pool.clear();
+    thread_completion.clear();
     for (int i = 0; i < worker_threads; i++) {
         std::thread *t = new std::thread(&HFractalMain::threadMain, this);
-        thread_pool.push_back (t);
+        thread_completion[t->get_id()] = false;
+        thread_pool.push_back(t);
     }
 
     if (wait) {

@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <map>
 #include "image.hh"
 #include "fractal.hh"
 #include "utils.hh"
@@ -23,8 +24,8 @@ private:
     HFractalImage *img = new HFractalImage(0,0);
     HFractalEquation *main_equation;
     std::vector<std::thread*> thread_pool;
+    std::map<std::thread::id, bool> thread_completion;
     bool is_rendering = false;
-
 
     void threadMain ();
 
