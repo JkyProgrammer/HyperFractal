@@ -82,7 +82,7 @@ int HFractalMain::generateImage (bool wait=true) {
         for (auto th : thread_pool) th->join();
         is_rendering = false;
     }
-    std::cout << "Rendering done." << std::endl;
+    std::cout << std::endl << "Rendering done." << std::endl;
     return 0;
 }
 
