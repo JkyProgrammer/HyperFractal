@@ -68,7 +68,7 @@ int HFractalMain::generateImage (bool wait=true) {
 
     if (wait) {
         while (true) {
-            if (img->isDone()) break;
+            if (!img->isDone()) break;
             #ifdef TERMINAL_UPDATES
             float percent = ((float)(img->getInd())/(float)(resolution*resolution))*100;
             std::cout << "\r";
@@ -77,7 +77,7 @@ int HFractalMain::generateImage (bool wait=true) {
             std::cout << " | ";
             std::cout << round(percent) << "%";
             #endif
-            crossPlatformDelay (2);
+            crossPlatformDelay (10);
         }
         for (auto th : thread_pool) th->join();
         is_rendering = false;
