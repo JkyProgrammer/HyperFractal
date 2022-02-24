@@ -40,6 +40,7 @@ HFractalImage::HFractalImage(int w, int h) {
     c_ind = 0; 
     data_image = new uint16_t[width*height];
     completed = new uint8_t[width*height];
+    // Clear both buffers
     for (int i = 0; i < width*height; i++) { data_image[i] = 0xffff; completed[i] = 0; }
 }
 
@@ -50,14 +51,17 @@ HFractalImage::HFractalImage(int w, int h) {
  * @return True for success, false for failure
  */
 bool HFractalImage::writePGM (std::string path) {
+    // Abort if the image is incomplete
     if (!isDone()) return false;
     FILE *img_file;
     img_file = fopen(path.c_str(),"wb");
 
+    // Write the header
     fprintf(img_file,"P5\n");
     fprintf(img_file,"%d %d\n",width,height);
     fprintf(img_file,"511\n");
 
+    // Write each pixel
     for(int y = 0; y < height; y++){
         for(int x = 0; x < width; x++){
             uint16_t p = data_image[(y*width)+x];
@@ -66,6 +70,7 @@ bool HFractalImage::writePGM (std::string path) {
         }
     }
 
+    // Close and return success
     fclose(img_file);
     return true;
 }
@@ -78,7 +83,7 @@ bool HFractalImage::writePGM (std::string path) {
  * @return The converted colour as a 32 bit integer
  */
 uint32_t HFractalImage::colourFromValue (uint16_t value, int colour_preset) {
-    uint32_t col = 0x000000ff;
+    uint32_t col = 0x000000ff; // TODO: Palettes
     if (colour_preset == 0) {
         uint8_t looped = (uint8_t)(value % 256);
         col |= looped << (8*1); // B
@@ -109,13 +114,15 @@ HFractalImage::~HFractalImage () {
  * @return The index of the next pixel to compute, -1 if there is no available pixel
  */
 int HFractalImage::getUncompleted () {
-    if (c_ind >= height*width) return -1;
+    // Lock resources to prevent collisions
     mut.lock();
     int i = -1;
+    // Find the next available pixel index and increment c_ind
     if (c_ind < height*width) {
         i = c_ind;
         c_ind++;
     }
+    // Unlock before returning
     mut.unlock();
     return i;
 }
@@ -126,12 +133,14 @@ int HFractalImage::getUncompleted () {
  * @return True if the image is complete, false otherwise
  */
 bool HFractalImage::isDone () {
-    if (width == 0 || height == 0) return false;
+    // Iterate over every pixel to check its status
     for (int i = 0; i < height*width; i++) {
         if (completed[i] != 2) {
+            // Fail if the pixel is not complete
             return false;
         }
     }
+    // Succeed if every pixel is fully computed
     return true;
 }
 
@@ -140,4 +149,4 @@ bool HFractalImage::isDone () {
  * 
  * @return The current completion index
  */
-int HFractalImage::getInd () {return c_ind;}
+int HFractalImage::getInd () { return c_ind; }

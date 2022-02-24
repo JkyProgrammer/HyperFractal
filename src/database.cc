@@ -7,6 +7,12 @@
 
 using namespace std;
 
+/**
+ * @brief Modify a string so that it can be written to CSV properly. This means replacing double quotes with a pair of consecutive double quotes
+ * 
+ * @param s Input string
+ * @return A ready-to-write result string
+ */
 std::string HFractalDatabase::forCSVInner (std::string s) {
     string fixed_quotes = "";
     for (char c : s) {
@@ -17,6 +23,12 @@ std::string HFractalDatabase::forCSVInner (std::string s) {
     return fixed_quotes;
 }
 
+/**
+ * @brief Break a record from a CSV file into a sequence of raw string fields
+ * 
+ * @param line Line from CSV file to process
+ * @return std::vector of raw string fields (require additional processing)
+ */
 std::vector<std::string> HFractalDatabase::componentify (std::string line) {
     vector<string> ret_value;
     string current_component;
@@ -33,6 +45,12 @@ std::vector<std::string> HFractalDatabase::componentify (std::string line) {
     return ret_value;
 }
 
+/**
+ * @brief Remove double-double quotes from a string. Effectively the reverse of forCSVInner
+ * 
+ * @param s String field to process
+ * @return Cleaned-up field string
+ */
 std::string HFractalDatabase::fixDoubleQuote (std::string s) {
     string result = "";
     char current_char = '\0';
@@ -46,13 +64,42 @@ std::string HFractalDatabase::fixDoubleQuote (std::string s) {
     return result;
 }
 
+/**
+ * @brief Construct a database instance using a base path to CSV files
+ * 
+ * @param path Base path to the target CSV database. Individual tables must be stored as separate CSV files, so the base path is modified provide paths to the invidiual CSV files
+ */
 HFractalDatabase::HFractalDatabase (std::string path) {
+    // Generate and assign the base path
     int cutoff = path.find(".csv");
     db_path = path.substr (0, cutoff);
 
+    // Try to read the database, failing that write a new one, failing that, error out
     if (!read()) if (!commit ()) throw new std::runtime_error ("unable to create database");
 }
 
+/**
+ * @brief Get a list of config profile descriptions paired with their IDs. Allows the GUI to easily grab a profile summary without having to fetch all the data one-by-one
+ * 
+ * @return std::vector of pairs of ID and string values
+ */
+std::vector<std::pair<long, std::string>> HFractalDatabase::getConfigDescriptions () {
+    std::vector<std::pair<long, std::string>> ret_val;
+    for (auto conf : configs) {
+        std::pair<long, std::string> desc_pair;
+        desc_pair.first = conf.first;
+        desc_pair.second = conf.second->name + " (" + conf.second->equation + ")";
+        ret_val.push_back (desc_pair);
+    }
+    return ret_val;
+}
+
+/**
+ * @brief Insert a configuration profile into the database. Automatically generates and assigns a unique ID
+ * 
+ * @param c Pointer to the config profile being inserted
+ * @return Generated ID of the profile
+ */
 long HFractalDatabase::insertConfig (HFractalConfigProfile* c) {
     long max_id = -1;
     for (pair<long, HFractalConfigProfile*> p : configs)
@@ -63,6 +110,12 @@ long HFractalDatabase::insertConfig (HFractalConfigProfile* c) {
     return c->profile_id;
 }
 
+/**
+ * @brief Insert a user profile into the database. Automatically generates and assigns a unique ID
+ * 
+ * @param u Pointer to the user profile being inserted
+ * @return Generated ID of the profile
+ */
 long HFractalDatabase::insertUser (HFractalUserProfile* u) {
     long max_id = -1;
     for (pair<long, HFractalUserProfile*> p : users)
@@ -73,22 +126,41 @@ long HFractalDatabase::insertUser (HFractalUserProfile* u) {
     return u->user_id;
 }
 
+/**
+ * @brief Delete a config profile record from the database
+ * 
+ * @param id ID of the profile to be deleted
+ * @return True if the delete succeeded, False if the record did not exist
+ */
 bool HFractalDatabase::removeConfig (long id) {
     return configs.erase (id);
 }
 
+/**
+ * @brief Delete a user profile record from the database
+ * 
+ * @param id ID of the profile to be deleted
+ * @return True if the delete succeeded, False if the record did not exist
+ */
 bool HFractalDatabase::removeUser (long id) {
     return users.erase (id);
 }
 
+/**
+ * @brief Write out the contents of the cached database to CSV files. 
+ * 
+ * @return True if the write succeeded, False if it failed
+ */
 bool HFractalDatabase::commit () {
+    // Create path strings and file streams
     string db_path_configs = db_path + "_configs.csv";
     string db_path_users = db_path + "_users.csv";
     ofstream db_file_configs (db_path_configs.c_str());
     ofstream db_file_users (db_path_users.c_str());
 
+    // If the file streams are open, write data
     if (db_file_configs.is_open() && db_file_users.is_open()) {
-        //db_file_configs << "profile_id,x_offset,y_offset,zoom,iterations,equation,name,preview_file_address,user_id" << endl;
+        // Iterate over config files
         for (auto copair : configs) {
             HFractalConfigProfile* config = copair.second;
             string line = "";
@@ -104,7 +176,7 @@ bool HFractalDatabase::commit () {
             db_file_configs << line.c_str() << endl;
         }
 
-        //db_file_users << "user_id,user_name" << endl;
+        // Iterate over user files
         for (auto upair : users) {
             HFractalUserProfile* user = upair.second;
             string line = "";
@@ -113,27 +185,36 @@ bool HFractalDatabase::commit () {
             db_file_users << line.c_str() << endl;
         }
 
+        // Close the files and return success
         db_file_configs.close();
         db_file_users.close();
         return true;
-    } else return false;
+    } else return false; // Return failure
 }
 
+/**
+ * @brief Read the contents of CSV files into the cached database
+ * 
+ * @return True if the read succeeded, False if it failed
+ */
 bool HFractalDatabase::read () {
+    // Create paths and file streams
     string db_path_configs = db_path + "_configs.csv";
     string db_path_users = db_path + "_users.csv";
     ifstream db_file_configs (db_path_configs.c_str());
     ifstream db_file_users (db_path_users.c_str());
 
+    // If the file streams are open, read data
     if (db_file_configs.is_open() && db_file_users.is_open()) {
         string line;
-
         int line_number = 0;
 
         configs.clear();
+        // Read config profiles
         HFractalConfigProfile* config;
         while (getline (db_file_configs, line)) {
             try {
+                // Attempt to convert the record to a config profile
                 vector<string> components = componentify (line);
                 config = new HFractalConfigProfile ();
                 cout << components[0] << endl;
@@ -148,6 +229,7 @@ bool HFractalDatabase::read () {
                 config->user_id = stol(components[8]);
                 configs.emplace (config->profile_id, config);
             } catch (std::invalid_argument e) {
+                // Print a console error if a line could not be read
                 cout << "Failed to read config profile on line " << line_number << endl;
             }
             line_number++;
@@ -155,36 +237,64 @@ bool HFractalDatabase::read () {
 
         line_number = 0;
 
+        // Read user profiles
         users.clear();
         HFractalUserProfile* user;
         while (getline (db_file_users, line)) {
             try {
+                // Attempt to convert the record to a user profile
                 vector<string> components = componentify (line);
                 user = new HFractalUserProfile ();
                 user->user_id = stol(components[0]);
                 user->user_name = components[1];
                 users.emplace (user->user_id, user);
             } catch (std::invalid_argument e) {
+                // Print a console error if a line could not be read
                 cout << "Failed to read user profile on line " << line_number << endl;
             }
             line_number++;
         }
+        // Return success
         return true;
-    } else return false;
+    } else return false; // Return failure
 }
 
+/**
+ * @brief Generate a CSV-happy string from a given input
+ * 
+ * @param s String input
+ * @return CSV-writeable string
+ */
 std::string HFractalDatabase::forCSV (std::string s) {
     return forCSVInner (s);
 }
 
+/**
+ * @brief Generate a CSV-happy string from a given input
+ * 
+ * @param l Long integer input
+ * @return CSV-writeable string
+ */
 std::string HFractalDatabase::forCSV (long l) {
     return forCSVInner (to_string(l));
 }
 
+/**
+ * @brief Generate a CSV-happy string from a given input
+ * 
+ * @param ld Long double input
+ * @return CSV-writeable string
+ */
 std::string HFractalDatabase::forCSV (long double ld) {
     return forCSVInner (to_string(ld));
 }
 
+/**
+ * @brief Generate a CSV-happy string from a given input
+ * 
+ * @param i Integer input
+ * @return CSV-writeable string
+ */
 std::string HFractalDatabase::forCSV (int i) {
     return forCSVInner (to_string(i));
 }
