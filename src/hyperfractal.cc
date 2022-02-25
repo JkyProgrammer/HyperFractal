@@ -33,7 +33,6 @@ void HFractalMain::threadMain () {
 
 int HFractalMain::generateImage (bool wait=true) {
     if (getIsRendering()) { std::cout << "already rendering!"; return 2; }
-    is_rendering = true;
     std::setprecision (100);
     std::cout << "Rendering with parameters: " << std::endl;
     std::cout << "Resolution=" << resolution << std::endl;
@@ -55,6 +54,8 @@ int HFractalMain::generateImage (bool wait=true) {
     }
     main_equation->setPreset (preset);
     
+    is_rendering = true;
+
     if (img != NULL) img->~HFractalImage();
     img = new HFractalImage (resolution, resolution);
 

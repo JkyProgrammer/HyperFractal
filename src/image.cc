@@ -59,14 +59,15 @@ bool HFractalImage::writePGM (std::string path) {
     // Write the header
     fprintf(img_file,"P5\n");
     fprintf(img_file,"%d %d\n",width,height);
-    fprintf(img_file,"511\n");
+    fprintf(img_file,"65535\n");
 
     // Write each pixel
     for(int y = 0; y < height; y++){
         for(int x = 0; x < width; x++){
             uint16_t p = data_image[(y*width)+x];
-            fputc (p & 0xff00, img_file);
+           
             fputc (p & 0x00ff, img_file);
+            fputc ((p & 0xff00) >> 8, img_file);
         }
     }
 
