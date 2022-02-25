@@ -5,6 +5,7 @@
 #ifndef EQUATIONPARSER_H
 #define EQUATIONPARSER_H
 
+// Enum describing the token type for the intermediate parser
 enum INTERMEDIATE_TOKEN_TYPE {
     INT_NUMBER,
     INT_LETTER,
@@ -12,6 +13,7 @@ enum INTERMEDIATE_TOKEN_TYPE {
     INT_BRACKET
 };
 
+// Struct describing the token for the intermediate parser
 struct IntermediateToken {
     INTERMEDIATE_TOKEN_TYPE type;
     double num_val;
@@ -20,6 +22,7 @@ struct IntermediateToken {
     vector<IntermediateToken> bracket_val;
 };
 
+// Enum describing the error types from the equation processor checking function
 enum EP_CHECK_STATUS {
     SUCCESS,
     BRACKET_ERROR,
@@ -29,18 +32,18 @@ enum EP_CHECK_STATUS {
     UNSUPCHAR_ERROR
 };
 
+// Class containing static methods used to parse a string into a postfix token vector
 class HFractalEquationParser {
 private:
-    static void coutToken (IntermediateToken);
-    static std::string epClean (std::string);
-    static EP_CHECK_STATUS epCheck (std::string);
-    static std::vector<IntermediateToken> epTokenise (std::string);
-    static std::vector<IntermediateToken> epFixImplicitMul (std::vector<IntermediateToken>);
-    static std::vector<IntermediateToken> epSimplifyBidmas (std::vector<IntermediateToken>, bool);
-    static std::vector<token> epReversePolishConvert (std::vector<IntermediateToken>);
+    static std::string epClean (std::string); // Preprocess the string to remove whitespace
+    static EP_CHECK_STATUS epCheck (std::string); // Check for formatting errors in the equation (such as mismatched brackets)
+    static std::vector<IntermediateToken> epTokenise (std::string); // Split the string into intermediate tokens
+    static std::vector<IntermediateToken> epFixImplicitMul (std::vector<IntermediateToken>); // Remove implicit multiplication
+    static std::vector<IntermediateToken> epSimplifyBidmas (std::vector<IntermediateToken>, bool); // Convert BIDMAS rules into explicit writing
+    static std::vector<Token> epReversePolishConvert (std::vector<IntermediateToken>); // Convert intermediate tokens into a final output postfix notation
 
 public:
-    static HFractalEquation* extract_equation (std::string);
+    static HFractalEquation* extract_equation (std::string); // Extract an equation containing postfix tokens from a string input
 };
 
 

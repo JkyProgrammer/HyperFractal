@@ -3,7 +3,6 @@
 #include <iostream>
 #include <chrono>
 #include <stack>
-using namespace std::chrono;
 using namespace std;
 
 bool HFractalEquation::isInfinity (complex<long double> comp) {
@@ -18,7 +17,7 @@ void HFractalEquation::setPreset (int i) {
 complex<long double> HFractalEquation::compute (complex<long double> z, complex<long double> c) {    
     stack<complex<long double>> value_stack;
 
-    for (token t : reverse_polish_vector) {
+    for (Token t : reverse_polish_vector) {
         if (t.type == NUMBER) {
             value_stack.push (t.num_val);
         } else if (t.type == LETTER) {
@@ -120,7 +119,7 @@ int HFractalEquation::evaluate (complex<long double> c, int limit) {
     return depth;
 }
 
-HFractalEquation::HFractalEquation (vector<token> rp_vec) {
+HFractalEquation::HFractalEquation (vector<Token> rp_vec) {
     reverse_polish_vector = rp_vec;
 }
 

@@ -4,30 +4,6 @@
 
 using namespace std;
 
-
-void HFractalEquationParser::coutToken (IntermediateToken t) {
-    switch (t.type) {
-    case INT_NUMBER:
-        cout << t.num_val << endl;
-        break;
-    case INT_LETTER:
-        cout << t.let_val << endl;
-        break;
-    case INT_OPERATION:
-        cout << t.op_val << endl;
-        break;
-    case INT_BRACKET:
-        cout << "(" << endl;
-        for (IntermediateToken t2 : t.bracket_val) {
-            coutToken (t2);
-        }
-        cout << ")" << endl;
-        break;
-    default:
-        break;
-    }
-}
-
 /**
  * @brief Clean whitespace out of the input string
  * 
@@ -41,7 +17,7 @@ string HFractalEquationParser::epClean (string s) {
 }
 
 /**
- * @brief Check that the input string is valid for the HFractalEquation parser to analyse. Checks for the following and returns an integer accordingly:
+ * @brief Check that the input string is valid for the HFractalEquation parser to analyse. Checks for the following and returns an enum value accordingly:
  * 
  * 0 - No error found
  * 1 - Bracket error: '()', '(' not equal number to ')', ')...('
@@ -51,7 +27,7 @@ string HFractalEquationParser::epClean (string s) {
  * 5 - Unsupported character error: '$', 'd', or any other character not accounted for
  * 
  * @param s Input string
- * @return Either the reference of the first error detected or zero if no error is found
+ * @return Either the reference of the first error detected or SUCCESS if no error is found
  */
 EP_CHECK_STATUS HFractalEquationParser::epCheck (string s) {
     int bracket_depth = 0;
@@ -392,8 +368,8 @@ vector<IntermediateToken> HFractalEquationParser::epSimplifyBidmas (vector<Inter
  * @param intermediate Token vector to convert
  * @return Vector of proper tokens, ready to use in the expression evaluator
  */
-vector<token> HFractalEquationParser::epReversePolishConvert (vector<IntermediateToken> intermediate) {
-    vector<token> output;
+vector<Token> HFractalEquationParser::epReversePolishConvert (vector<IntermediateToken> intermediate) {
+    vector<Token> output;
     
     IntermediateToken operation = {.op_val = '\0'};
 
@@ -404,7 +380,7 @@ vector<token> HFractalEquationParser::epReversePolishConvert (vector<Intermediat
         } else {
             // Append to token(s) rp notation
             if (current_intermediate_token.type == INT_BRACKET) {
-                vector<token> inner_result = epReversePolishConvert (current_intermediate_token.bracket_val);
+                vector<Token> inner_result = epReversePolishConvert (current_intermediate_token.bracket_val);
                 output.insert (output.end(), inner_result.begin(), inner_result.end());
             } else {
                 output.push_back ({
@@ -445,7 +421,7 @@ HFractalEquation* HFractalEquationParser::extract_equation (string sequ) {
     expression = epFixImplicitMul (expression);
     expression = epSimplifyBidmas (expression, false);
 
-    vector<token> reverse_polish_expression = epReversePolishConvert (expression);
+    vector<Token> reverse_polish_expression = epReversePolishConvert (expression);
 
     return new HFractalEquation (reverse_polish_expression);
 }
