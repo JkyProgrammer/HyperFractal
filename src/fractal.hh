@@ -36,10 +36,8 @@ public:
     complex<long double> compute (complex<long double>, complex<long double>); // Perform a single calculation using the equation and the specified z and c values
     int evaluate (complex<long double>, int); // Perform the fractal calculation 
 
-    HFractalEquation (vector<Token>);
-    HFractalEquation ();
+    HFractalEquation (vector<Token>); // Initialise with a sequence of equation tokens
+    HFractalEquation (); // Base initialiser
 };
-
-// std::ostream & operator<<(std::ostream & Str, HFractalEquation const & v);
 
 #endif
