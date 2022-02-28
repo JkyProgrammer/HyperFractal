@@ -129,7 +129,7 @@ uint32_t HFractalImage::HSVToRGB (float h, float s, float v) {
  * @return The converted colour as a 32 bit integer
  */
 uint32_t HFractalImage::colourFromValue (uint16_t value, int colour_preset) {
-    uint32_t col = 0x000000ff; // TODO: Palettes
+    uint32_t col = 0x000000ff;
     if (colour_preset == 0) {
         col |= 0x3311ff00;
         col |= ((value % 256) << (8*3)) + 0x33000000;
