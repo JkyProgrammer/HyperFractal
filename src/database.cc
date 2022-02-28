@@ -172,6 +172,7 @@ bool HFractalDatabase::commit () {
             line += forCSV (config->equation) + ",";
             line += forCSV (config->name) + ",";
             line += forCSV (config->preview_file_address) + ",";
+            line += forCSV (config->palette) + ",";
             line += forCSV (config->user_id);
             db_file_configs << line.c_str() << endl;
         }
@@ -226,7 +227,8 @@ bool HFractalDatabase::read () {
                 config->equation = components[5];
                 config->name = components[6];
                 config->preview_file_address = components[7];
-                config->user_id = stol(components[8]);
+                config->palette = components[8];
+                config->user_id = stol(components[9]);
                 configs.emplace (config->profile_id, config);
             } catch (std::invalid_argument e) {
                 // Print a console error if a line could not be read

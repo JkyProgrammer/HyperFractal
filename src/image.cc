@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ostream>
+#include <math.h>
 
 /**
  * @brief Set the value of a pixel, and automatically mark it as complete
@@ -77,6 +78,50 @@ bool HFractalImage::writePGM (std::string path) {
 }
 
 /**
+ * @brief Create an RGBA 32 bit colour from hue, saturation, value components
+ * 
+ * @param h Hue value
+ * @param s Saturation value
+ * @param v Value (brightness) value
+ * @return A 32 bit colour in RGBA form
+ */
+uint32_t HFractalImage::HSVToRGB (float h, float s, float v) {
+    float c = v * s;
+    float h_ = fmod(h,1)*6;
+    float x = c * (1 - fabsf(fmodf(h_, 2)-1));
+    float m = v - c;
+
+    float r;
+    float g;
+    float b;
+
+    if (h_ >= 0 && h_ < 1) {
+        r = c; g = x; b = 0;
+    } else if (h_ < 2) {
+        r = x; g = c; b = 0;
+    } else if (h_ < 3) {
+        r = 0; g = c; b = x;
+    } else if (h_ < 4) {
+        r = 0; g = x; b = c;
+    } else if (h_ < 5) {
+        r = x; g = 0; b = c;
+    } else if (h_ < 6) {
+        r = c; g = 0; b = x;
+    }
+
+    r = r + m;
+    g = g + m;
+    b = b + m;
+
+    uint32_t final_value = 0x000000ff;
+    final_value |= (int)(r*255) << (8*3);
+    final_value |= (int)(g*255) << (8*2);
+    final_value |= (int)(b*255) << (8*1);
+
+    return final_value;
+}
+
+/**
  * @brief Convert a computed value (i.e. from the image_data buffer) into a renderable RGBA 32 bit colour
  * 
  * @param value The value to convert
@@ -86,12 +131,24 @@ bool HFractalImage::writePGM (std::string path) {
 uint32_t HFractalImage::colourFromValue (uint16_t value, int colour_preset) {
     uint32_t col = 0x000000ff; // TODO: Palettes
     if (colour_preset == 0) {
-        uint8_t looped = (uint8_t)(value % 256);
+        col |= 0x3311ff00;
+        col |= ((value % 256) << (8*3)) + 0x33000000;
+    } else if (colour_preset == 1) {
+        uint8_t looped = 255-(uint8_t)(value % 256);
+        col |= looped << (8*3);
+        col |= (2*looped) << (8*2);
+        col |= 0x00007000;
+    } else if (colour_preset == 2) {
+        float hue = (float)value/(float)0xffff;
+        hue = fmod(512*hue, 1);
+        col = HFractalImage::HSVToRGB (hue, 0.45, 0.8);
+    } else if (colour_preset == 3) {
+        uint8_t looped = 255-(uint8_t)(value % 256);
         col |= looped << (8*1); // B
         col |= looped << (8*2); // G
         col |= looped << (8*3); // R
-    } else if (colour_preset == 1) {
-        uint8_t looped = 255-(uint8_t)(value % 256);
+    } else if (colour_preset == 4) {
+        uint8_t looped = (uint8_t)(value % 256);
         col |= looped << (8*1); // B
         col |= looped << (8*2); // G
         col |= looped << (8*3); // R

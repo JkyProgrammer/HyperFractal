@@ -25,6 +25,7 @@ public:
     int getInd (); // Get the current completion index
     bool writePGM (std::string); // Write out the contents of the data buffer to a simple image file, PGM format, with the given path
 
+    static uint32_t HSVToRGB (float h, float s, float v); // Create a 32 bit RGB colour from hue, saturation, value components
     static uint32_t colourFromValue (uint16_t, int); // Convert a computed value into a 32 bit RGBA colour value, using the specified palette
     static const uint32_t BLACK = 0x000000ff; // Colour constant for black
 };
