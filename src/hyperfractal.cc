@@ -8,31 +8,51 @@
 using namespace std;
 using namespace std::chrono;
 
+/**
+ * @brief Main function called when each worker thread starts. Contains code to actually fetch and render pixels
+ * 
+ */
 void HFractalMain::threadMain () {
+    // Pre-compute constants to increase performance
     long double p = 2/(zoom*resolution);
     long double q = (1/zoom)-offset_x;
     long double r = (1/zoom)+offset_y;
 
+    // Get the next unrendered pixel
     int next = img->getUncompleted();
     while (next != -1) {
+        // Find the x and y coordinates based on the pixel index
         int x = next%resolution;
         int y = next/resolution;
+        // Apply the mathematical transformation of offsets and zoom to find a and b, which form a coordinate pair representing this pixel in the complex plane
         long double a = (p*x) - q;
         long double b = r - (p*y);
+        // Construct the initial coordinate value, and perform the evaluation on the main equation
         complex<long double> c = complex<long double> (a,b);
         int res = (main_equation->evaluate (c, eval_limit));
+        // Set the result back into the image class, and get the next available unrendered pixel
         img->set (x, y, res);
         next = img->getUncompleted();
     }
+    
+    // When there appear to be no more pixels to compute, mark this thread as completed
     thread_completion[std::this_thread::get_id()] = true;
     
+    // Check to see if any other threads are still rendering, if not then set the flag to mark the environment as no longer rendering
     bool is_incomplete = false;
     for (auto p : thread_completion) is_incomplete |= !p.second;
     if (!is_incomplete) is_rendering = false;
 }
 
+/**
+ * @brief Generate a fractal image based on all the environment parameters
+ * 
+ * @param wait Whether to wait and block the current thread until the image has been fully computed, useful if you want to avoid concurrency somewhere else (functionality hiding)
+ * @return Integer representing status code, 0 for success, else for failure
+ */
 int HFractalMain::generateImage (bool wait=true) {
-    if (getIsRendering()) { std::cout << "already rendering!"; return 2; }
+    if (getIsRendering()) { std::cout << "Aborting!" << std::endl; return 2; } // Prevent overlapping renders from starting
+    // Output a summary of the rendering parameters
     std::setprecision (100);
     std::cout << "Rendering with parameters: " << std::endl;
     std::cout << "Resolution=" << resolution << std::endl;
@@ -42,7 +62,8 @@ int HFractalMain::generateImage (bool wait=true) {
     std::cout << "OffsetX="; printf ("%.70Lf", offset_x); std::cout << std::endl;
     std::cout << "OffsetY="; printf ("%.70Lf", offset_y); std::cout << std::endl;
 
-    if (main_equation == NULL) { std::cout << "Stopping!" << std::endl; return 1; }
+    // Abort rendering if the equation is invalid
+    if (!isValidEquation()) { std::cout << "Aborting!" << std::endl; return 1; }
 
     // Detect if the HFractalEquation matches the blueprint of a preset
     int preset = -1;
@@ -54,11 +75,14 @@ int HFractalMain::generateImage (bool wait=true) {
     }
     main_equation->setPreset (preset);
     
+    // Mark the environment as now rendering, locking resources/parameters
     is_rendering = true;
 
+    // Clear and reinitialise the image class with the requested resolution
     if (img != NULL) img->~HFractalImage();
     img = new HFractalImage (resolution, resolution);
 
+    // Clear the thread pool, and populate it with fresh worker threads
     thread_pool.clear();
     thread_completion.clear();
     for (int i = 0; i < worker_threads; i++) {
@@ -67,19 +91,23 @@ int HFractalMain::generateImage (bool wait=true) {
         thread_pool.push_back(t);
     }
 
+    // Optionally, wait for the render to complete before returning
     if (wait) {
         while (true) {
+            // If enabled at compile time, show a progress bar in the terminal 
             #ifdef TERMINAL_UPDATES
-            float percent = ((float)(img->getInd())/(float)(resolution*resolution))*100;
+            float percent = getImageCompletionPercentage();
             std::cout << "\r";
             std::cout << "Working: ";
             for (int k = 2; k <= 100; k+=2) { if (k <= percent) std::cout << "█"; else std::cout << "_"; }
             std::cout << " | ";
             std::cout << round(percent) << "%";
             #endif
+            // Break out when the image has been fully completed (all pixels computed)
             if (img->isDone()) break;
             crossPlatformDelay (10);
         }
+        // Wait for all the threads to join, then finish up
         for (auto th : thread_pool) th->join();
         is_rendering = false;
     }
@@ -87,6 +115,10 @@ int HFractalMain::generateImage (bool wait=true) {
     return 0;
 }
 
+/**
+ * @brief Construct a new rendering environment, with blank parameters
+ * 
+ */
 HFractalMain::HFractalMain () {
     resolution = 1;
     offset_x = 0;
@@ -95,11 +127,19 @@ HFractalMain::HFractalMain () {
     img = NULL;
 }
 
+/**
+ * @brief Convert the raw data stored in the image class into a coloured RGBA 32 bit image using a particular colour scheme preset
+ * 
+ * @param colour_preset The colour scheme to use
+ * @return uint32_t* Pointer to the image stored in memory as an array of 4-byte chunks
+ */
 uint32_t* HFractalMain::getRGBAImage (int colour_preset) {
+    // Return a blank result if the image is uninitialised, other conditions should ensure this never occurs
     if (img == NULL) {
         return (uint32_t *)malloc(0);
     }
 
+    // Copy parameters to local
     int size = resolution;
     int limit = eval_limit;
     
@@ -115,14 +155,27 @@ uint32_t* HFractalMain::getRGBAImage (int colour_preset) {
         }
     }
 
+    // Return the pointer to the pixel buffer
     return pixels;
 }
 
+/**
+ * @brief Get the percentage of pixels in the image which have been computed
+ * 
+ * @return Unrounded percentage
+ */
 float HFractalMain::getImageCompletionPercentage () {
     if (img == NULL) return 100;
     return ((float)(img->getInd())/(float)(resolution*resolution))*100;
 }
 
+/**
+ * @brief Automatically write an image to a generated file address.
+ * File path will be dynamically constructed so that the file name is unique, timestamped, and placed on the user's desktop
+ * 
+ * @param type Image format to write image out to
+ * @return True for success, false for failure 
+ */
 bool HFractalMain::autoWriteImage (IMAGE_TYPE type) {
     string image_name = "Fractal render from ";
 
@@ -163,7 +216,7 @@ bool HFractalMain::autoWriteImage (IMAGE_TYPE type) {
     image_path += getDesktopPath();
     image_path += image_name;
 
-
+    // Call into the image's writer to write out data
     switch (type) {
     case PGM:
         image_path += ".pgm";
