@@ -1,4 +1,5 @@
 #include "gui.hh"
+#include "guimain.hh"
 #include <math.h>
 #include <algorithm>
 #include <iostream>
@@ -554,4 +555,10 @@ int HFractalGui::guiMain() {
 }
 
 HFractalGui::HFractalGui() {}
+
+int guiMain () {
+    HFractalGui gui = HFractalGui ();
+    int res = gui.guiMain();
+    return res;
+}
 

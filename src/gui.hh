@@ -4,12 +4,10 @@
 #include "hyperfractal.hh"
 #include <map>
 
-#ifndef minclude
 #define RAYGUI_IMPLEMENTATION
 #define RAYGUI_SUPPORT_ICONS
 #include "../lib/raygui.h"
 #include "../lib/ricons.h"
-#endif
 
 #define SCALE_STEP_FACTOR 1.5       // Factor by which scaling changes
 #define SCALE_DEPTH_LIMIT 1.0e15    // Limit to prevent user from going too deep due to limited precision
@@ -54,7 +52,6 @@ enum MODAL_VIEW_STATE {
 };
 
 class HFractalGui {
-#ifndef minclude
 private:
     std::map<KeyboardKey, BUTTON_ID> key_map = {
         {KEY_ENTER, BUTTON_ID::BUTTON_ID_RENDER},
@@ -131,7 +128,6 @@ private:
 
     void tryUnloadImage();
     void tryUnloadTexture();
-#endif
 public:
     int guiMain();
 

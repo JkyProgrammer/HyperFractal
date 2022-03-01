@@ -15,8 +15,7 @@
 #include "hyperfractal.hh"
 #include "database.hh"
 
-#define minclude
-#include "gui.hh"
+#include "guimain.hh"
 
 int main (int argc, char *argv[]) {
     if (argc == 8) {
@@ -35,8 +34,6 @@ int main (int argc, char *argv[]) {
         std::cout << "int resolution, long double offset_x, long double offset_y, long double zoom, string HFractalEquation, int worker_threads, int eval_limit" << std::endl;
         return 1;
     } else {
-        HFractalGui gui = HFractalGui ();
-        int res = gui.guiMain();
-        return res;
+        return guiMain();
     }
 }
