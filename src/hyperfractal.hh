@@ -1,7 +1,7 @@
 #ifndef HYPERFRACTAL_H
 #define HYPERFRACTAL_H
 // When defined, progress updates will be written to terminal.
-#define TERMINAL_UPDATES
+//#define TERMINAL_UPDATES
 
 #include <string>
 #include <thread>

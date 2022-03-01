@@ -227,7 +227,7 @@ bool HFractalDatabase::read () {
                 config->equation = components[5];
                 config->name = components[6];
                 config->preview_file_address = components[7];
-                config->palette = components[8];
+                config->palette = stoi(components[8]);
                 config->user_id = stol(components[9]);
                 configs.emplace (config->profile_id, config);
             } catch (std::invalid_argument e) {

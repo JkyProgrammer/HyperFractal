@@ -4,69 +4,11 @@
 #include <iostream>
 #include <thread>
 #include "utils.hh"
-
-#define RAYGUI_IMPLEMENTATION
-#define RAYGUI_SUPPORT_ICONS
-#include "../lib/raygui.h"
-#include "../lib/ricons.h"
-
-#define SCALE_STEP_FACTOR 1.5       // Factor by which scaling changes
-#define SCALE_DEPTH_LIMIT 1.0e15    // Limit to prevent user from going too deep due to limited precision
-#define MOVE_STEP_FACTOR 0.1        // Factor by which position changes
-#define WINDOW_INIT_WIDTH 900       // Initial window - width
-#define WINDOW_INIT_HEIGHT 550      //                - height
-#define BUTTON_HEIGHT 30            // Height of a single button in the interface
-#define ELEMENT_NUM_VERTICAL 14     // Number of vertical elements
-#define BUTTON_NUM_TOTAL 16         // Total number of buttons in the interface
-#define CONTROL_MIN_WIDTH 400       // Minimum width of the control panel
-#define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL
-#define DIALOG_TEXT_SIZE 25
-#define HELP_TEXT_SIZE 15
+#include <cassert>
 
 using namespace std;
 
-/**
- * @brief Convert the result of a render (B-W map) into a coloured HFractalImage
- * 
- * @param hm Hyperfractal instance from which to extract the HFractalImage
- * @return Image 
- */
-Image convert (HFractalMain* hm) {
-    int size = hm->getResolution();
-    uint32_t *data = hm->getRGBAImage(2);
-    Color *pixels = (Color *)malloc (size*size*sizeof(Color));
-    for (int i = 0; i < size*size; i++)
-        pixels[i] = (Color) {(unsigned char)((data[i] & 0xff000000) >> (8*3)),
-                             (unsigned char)((data[i] & 0x00ff0000) >> (8*2)),
-                             (unsigned char)((data[i] & 0x0000ff00) >> (8*1)),
-                             (unsigned char)(data[i] & 0x000000ff)};
-    Image img = {
-        .data = pixels,
-        .width = size,
-        .height = size,
-        .mipmaps = 1,
-        .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
-    };
-    return img;
-}
-
-// DONE: Crash when fullscreening
-// DONE: Buttons stop responding sometimes - was a multithreading issue on the HFractalImage
-
-// TODO: Add comments to all the code
-// TODO: Rewrite pixel distribution
-// TODO: Remove all debugging related stuff
-// TODO: Class-ify gui
-// TODO: Custom mapping between colour vectors, move into HFractalImage classs
-// TODO: Add a 'jump to' dialog
-// TODO: Database system
-// TODO: PNG writing
-
-// CONGRATS! We're running a 12.21s benchmark vs 37.00s from the Java version
-// Ah, unfortunately thats now a 20s benchmark using the more precise infinity comparison
-// Using optimisations and with hard-coded presets, we achieve a THREE SECOND BENCHMARK
-
-void configureGuiStyle () {
+void HFractalGui::configureStyling() {
     // This function implements the 'cyber' interface style provided by raygui's documentation.
     const char* stylesheet = R"(p 00 00 0x2f7486ff    DEFAULT_BORDER_COLOR_NORMAL
 p 00 01 0x024658ff    DEFAULT_BASE_COLOR_NORMAL
@@ -118,35 +60,47 @@ p 00 19 0x00222bff    DEFAULT_BACKGROUND_COLOR)";
     GuiUpdateStyleComplete();
 }
 
-int guiMain () {
-    // Initialise the renderers
-    HFractalMain* lowres_hm = new HFractalMain();
-    HFractalMain* hm = new HFractalMain();
+void HFractalGui::configureGUI() {
+    // Basic class initialisation
+    dialog_text = "";
+    console_text = "Ready.";
+    for (int i = 0; i < BUTTON_NUM_TOTAL; i++) button_states[i] = false;
+    buffer_image = {};
+    buffer_texture = {};
+    is_rendering = false;
+    is_outdated_render = true;
+    render_percentage = 0;
+    showing_coordinates = false;
+    modal_view_state = MVS_NORMAL;
+    selected_palette = 0;
+    is_textbox_focussed = false;
 
-    // Get config data
-    const auto thread_count = std::thread::hardware_concurrency ();
-    int image_dimension = WINDOW_INIT_HEIGHT;
-    int control_panel_width = WINDOW_INIT_WIDTH - image_dimension;
+    // Fetch configuration
+    unsigned int thread_count = std::thread::hardware_concurrency ();
+    long double start_zoom = 1;
+    long double start_x_offset = 0;
+    long double start_y_offset = 0;
+    image_dimension = WINDOW_INIT_HEIGHT;
+    control_panel_width = WINDOW_INIT_WIDTH - WINDOW_INIT_HEIGHT;
+    equation_buffer = equationPreset (EQ_MANDELBROT, false);
 
     // GUI configuration
     SetTraceLogLevel (LOG_WARNING | LOG_ERROR | LOG_DEBUG);
     InitWindow(WINDOW_INIT_WIDTH, WINDOW_INIT_HEIGHT, "HyperFractal Mathematical Visualiser");
     SetWindowState (FLAG_WINDOW_RESIZABLE);
+    SetExitKey(-1);
     int min_height = std::max (256, CONTROL_MIN_HEIGHT);
     SetWindowMinSize(min_height+CONTROL_MIN_WIDTH, min_height);  
     SetTargetFPS(30);
-    configureGuiStyle ();
+    configureStyling();
 
-    long double start_zoom = 1.0; //1.477892e+03;
-    long double start_x_offset = 0.0; //-1.4112756161337429028227244409698926119745010510087013244628906250000000;
-    long double start_y_offset = 0.0;
-
-    string dialog_text = "";
-    string equation_default = equationPreset (EQ_MANDELBROT, false);
+    // Initialise rendering environment
+    lowres_hm = new HFractalMain();
+    hm = new HFractalMain();
 
     // Configure full resolution renderer
     hm->setResolution (image_dimension);
-    hm->setEquation (equation_default);
+    hm->setEquation (equation_buffer);
     hm->setEvalLimit (200);
     hm->setWorkerThreads (thread_count);
     hm->setZoom (start_zoom);
@@ -155,444 +109,449 @@ int guiMain () {
 
     // Configure preivew renderer
     lowres_hm->setResolution (128);
-    lowres_hm->setEquation (equation_default);
+    lowres_hm->setEquation (equation_buffer);
     lowres_hm->setEvalLimit (200);
     lowres_hm->setWorkerThreads (thread_count/2);
     lowres_hm->setZoom (start_zoom);
     lowres_hm->setOffsetX (start_x_offset);
     lowres_hm->setOffsetY (start_y_offset);
-    
-    // Declare states and variables for carrying data between mainloop passes
-    bool button_states[BUTTON_NUM_TOTAL] = {false}; // The click states of all the buttons
-    Image buffer_image = {}; // Image buffer for the fractal HFractalImage
-    Texture2D buffer_texture = {}; // Texture buffer for the fractal HFractalImage
-    bool image_needs_update = true;
-    bool is_rendering = false; // Indicates that we're currently rendering the full resolution HFractalImage (meaning the hm configuration is locked)
-    bool is_outdated_render = true; // Indicates that the full-res render is out of date (and thus is not showing)
-    bool equation_preset_dialog = false; // Is the HFractalEquation preset dialog enabled
-    float preset_dialog_x = 0.0;
-    float preset_dialog_y = 0.0;
-    string console_text = "Ready."; // Text shown on the console text
-    int percent = 0; // Render completion percentage
-    bool show_coords = true; // Indicates whether the coordinates of the mouse cursor in math space are shown
-    bool needs_to_update_resolution = false;
-    int modal_view_state = 0;    // Indicates what modal state the interface is in:
-                                /*
-                                 * 0 - Interface is in normal mode
-                                 * 1 - Interface is in text dialog mode
-                                 * 2 - Interface is in render state database mode
-                                 * 3 - Interface is in HFractalEquation prest dialog mode
-                                 */
+}
 
-    // Generate the initial preview render
+void HFractalGui::parametersWereModified() {
+    is_outdated_render = true;
+    console_text = "Outdated render!";
+    updatePreviewRender();
+}
+
+bool HFractalGui::updatePreviewRender() {
+    if (!lowres_hm->isValidEquation()) return false;
     lowres_hm->generateImage(true);
-    string equation_tmp = equation_default;
-    while (!WindowShouldClose()) {
-        if (IsWindowResized()) {
-            image_dimension = std::min(GetScreenWidth()-CONTROL_MIN_WIDTH, GetScreenHeight());
-            control_panel_width = GetScreenWidth()-image_dimension;
-            if (!is_rendering) { hm->setResolution(image_dimension); }
-            else needs_to_update_resolution = true;
-        }
+    tryUnloadImage();
+    tryUnloadTexture();
+    buffer_image = getImage(lowres_hm);
+    ImageResize(&buffer_image, image_dimension, image_dimension);
+    buffer_texture = LoadTextureFromImage(buffer_image);
+    return true;
+}
+
+bool HFractalGui::startFullRender() {
+    if (!hm->isValidEquation()) {
+        console_text = "Invalid equation!";
+        return false;
+    }
+    is_rendering = true;
+    console_text = "Rendering...";
+    hm->generateImage(false);
+    is_outdated_render = true;
+    render_percentage = 0;
+    return true;
+}
+
+bool HFractalGui::updateFullRender() {
+    if (!is_rendering) return true;
+    render_percentage = round(hm->getImageCompletionPercentage());
+    if (hm->getIsRendering()) {
+        is_outdated_render = true;
+        Image overlay = getImage(hm);
+        ImageDraw(&buffer_image, overlay, (Rectangle){0,0,(float)hm->getResolution(),(float)hm->getResolution()}, (Rectangle){0,0,(float)hm->getResolution(),(float)hm->getResolution()}, WHITE);
+        UnloadImage(overlay);
+        tryUnloadTexture();
+        buffer_texture = LoadTextureFromImage(buffer_image);
+        return false;
+    } else {
+        is_outdated_render = false;
+        is_rendering = false;
+        tryUnloadImage();
+        tryUnloadTexture();
+        buffer_image = getImage(hm);
+        buffer_texture = LoadTextureFromImage(buffer_image);
+        console_text = "Rendering done.";
+        return true;
+    }
+}
+
+void HFractalGui::checkWindowResize() {
+    if (is_rendering) {
+        SetWindowSize(image_dimension+control_panel_width, image_dimension);
+        return;
+    }
+    if (IsWindowResized()) {
+        image_dimension = std::min(GetScreenWidth()-CONTROL_MIN_WIDTH, GetScreenHeight());
+        control_panel_width = GetScreenWidth()-image_dimension;
+        hm->setResolution(image_dimension);
+        parametersWereModified();
+    }
+}
+
+void HFractalGui::drawInterface() {
+    BeginDrawing();
+    Color bg_col = GetColor (GuiGetStyle(00, BACKGROUND_COLOR));
+    ClearBackground(bg_col);
+
+    // Draw the rendered HFractalImage      
+    Vector2 v {0,0};
+    DrawTextureEx (buffer_texture, v, 0, (float)image_dimension/(float)buffer_texture.height, WHITE);
+    // Draw Console
+    int button_offset = 0;
+    GuiTextBox((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, (char*)console_text.c_str(), 1, false);
+    // Draw "Render Image" button
+    button_offset++;
+    button_states[BUTTON_ID::BUTTON_ID_RENDER] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "Render Image");
+    // Draw render progress bar
+    button_offset++;
+    GuiProgressBar ((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "", "", render_percentage, 0, 100);
+    // Draw zoom buttons
+    button_offset++;
+    button_states[BUTTON_ID::BUTTON_ID_ZOOM_IN] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/3, BUTTON_HEIGHT}, "Zoom In");
+    button_states[BUTTON_ID::BUTTON_ID_ZOOM_RESET] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/3, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/3, BUTTON_HEIGHT}, "Reset Zoom");
+    button_states[BUTTON_ID::BUTTON_ID_ZOOM_OUT] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/(3.0f/2.0f), BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/3, BUTTON_HEIGHT}, "Zoom Out");
+    // Draw save HFractalImage button
+    button_offset++;
+    button_states[BUTTON_ID::BUTTON_ID_SAVE_IMAGE] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "Save Image");
+    // Draw render state load/save buttons
+    button_offset++;
+    button_states[BUTTON_ID::BUTTON_ID_SAVE_RSTATE] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, "Save Render State");
+    button_states[BUTTON_ID::BUTTON_ID_LOAD_RSTATE] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, "Load Render State");
+    // Draw movement navigation buttons
+    button_offset++;
+    button_states[BUTTON_ID::BUTTON_ID_UP] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width-40)/2, BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "up");
+    button_offset++;
+    button_states[BUTTON_ID::BUTTON_ID_LEFT] = GuiButton((Rectangle){(float)image_dimension+(((float)control_panel_width)/2)-40, BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "left");
+    button_states[BUTTON_ID::BUTTON_ID_RIGHT] = GuiButton((Rectangle){(float)image_dimension+(((float)control_panel_width)/2), BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "right");
+    button_offset++;
+    button_states[BUTTON_ID::BUTTON_ID_DOWN] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width-40)/2, BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "down");
+    button_offset++;
+    button_states[BUTTON_ID::BUTTON_ID_EQ_PRESETS] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, "Equation Presets");
+    
+    // Draw equation input box
+    button_states[BUTTON_ID::BUTTON_ID_EQ_INPUTBOX] = GuiTextBox ((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, equation_buffer.data(), 1, false);
+    button_offset++;
+
+    // Coordinate toggle button
+    string coord_button_text = "Hide coordinates";
+    if (!showing_coordinates) coord_button_text = "Show coordinates";
+    button_states[BUTTON_ID::BUTTON_ID_TOGGLE_COORDS] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, coord_button_text.c_str());
+    button_offset++;
+
+    // Eval limit controls
+    button_states[BUTTON_ID::BUTTON_ID_EVAL_LIM_LESS] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/4, BUTTON_HEIGHT}, "<");
+    button_states[BUTTON_ID::BUTTON_ID_EVAL_LIM_MORE] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width/4)*3, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/4, BUTTON_HEIGHT}, ">");
+    char evalLimString[16];
+    sprintf (evalLimString, "%d (%d)", hm->getEvalLimit(), lowres_hm->getEvalLimit());
+    GuiTextBox ((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, evalLimString, 1, false);
+    button_offset++;
         
-        if (modal_view_state == 0 || modal_view_state == 3) {
-            // Detect clicking to recenter
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !is_rendering) {
-                Vector2 mpos = GetMousePosition();
-                if (mpos.x <= image_dimension && mpos.y <= image_dimension) {
-                    long double change_in_x = (long double)((mpos.x/(image_dimension/2))-1)/hm->getZoom();
-                    long double change_in_y = (long double)((mpos.y/(image_dimension/2))-1)/hm->getZoom();
-                    long double new_offset_x = hm->getOffsetX() + change_in_x;
-                    long double new_offset_y = hm->getOffsetY() - change_in_y;
-                    lowres_hm->setOffsetX (new_offset_x);
-                    lowres_hm->setOffsetY (new_offset_y);
-                    hm->setOffsetX (new_offset_x);
-                    hm->setOffsetY (new_offset_y);
-                    is_outdated_render = true;
-                    console_text = "Outdated!";
-                    image_needs_update = true;
-                    lowres_hm->generateImage (true);
-                    crossPlatformDelay (1);
-                }
-            }
-        } else {
-            GuiLock();
-        }
+    button_states[BUTTON_ID::BUTTON_ID_HELP] = GuiButton((Rectangle){(float)image_dimension, (float)GetScreenHeight()-(2*BUTTON_HEIGHT), (float)control_panel_width, BUTTON_HEIGHT*2}, "Help & Instructions");
 
-        // Render button pressed
-        if ((button_states[0] || IsKeyPressed(KEY_ENTER)) && !is_rendering && !image_needs_update) {
-            std::cout << "Rerendering..." << std::endl;
-            is_rendering = true;
-            lowres_hm->generateImage(true);
-            if (lowres_hm->isValidEquation()) {
-                is_outdated_render = true;
-                console_text = "Rendering...";
-                hm->generateImage(false);
-                image_needs_update = true;
-                crossPlatformDelay (1);
-            } else {
-                console_text = "Invalid HFractalEquation!";
-                is_rendering = false;
+    // Draw the equation preset dialog
+    if (modal_view_state == MODAL_VIEW_STATE::MVS_EQUATION_PRESET_SELECTOR) {
+        float preset_dialog_x = (float)image_dimension+(float)control_panel_width/2;
+        float preset_dialog_y = BUTTON_HEIGHT*13.0f;
+        for (int e = 1; e <= NUM_EQUATION_PRESETS; e++) {
+            if (
+                GuiButton((Rectangle){preset_dialog_x, preset_dialog_y+(BUTTON_HEIGHT*(e-1)), (float)control_panel_width/2, BUTTON_HEIGHT}, equationPreset(e, true).c_str())
+            && !is_rendering
+            ) {
+                escapeEquationPresetDialog(e);
             }
         }
-
-        // Zoom in button pressed
-        if (button_states[1] && !is_rendering) {
-            if (lowres_hm->getZoom() <= SCALE_DEPTH_LIMIT) {
-                is_outdated_render = true;
-                console_text = "Outdated!";
-                image_needs_update = true;
-                long double new_zoom = hm->getZoom() * SCALE_STEP_FACTOR;
-                lowres_hm->setZoom (new_zoom);
-                hm->setZoom (new_zoom);
-                lowres_hm->generateImage (true);
-            } else dialog_text = "Zoom precision limit reached";
-            crossPlatformDelay (1);
+        if (GetMouseX() < preset_dialog_x || GetMouseX() > preset_dialog_x + (float)control_panel_width/2 ||  GetMouseY() < preset_dialog_y - BUTTON_HEIGHT || GetMouseY() > preset_dialog_y + (BUTTON_HEIGHT*NUM_EQUATION_PRESETS)) {
+            escapeEquationPresetDialog(-1);
         }
-        
-        // Zoom out button pressed
-        if (button_states[2] && !is_rendering) {
-            is_outdated_render = true;
-            console_text = "Outdated!";
-            image_needs_update = true;
-            long double new_zoom = hm->getZoom() / SCALE_STEP_FACTOR;
-            lowres_hm->setZoom (new_zoom);
-            hm->setZoom (new_zoom);
-            lowres_hm->generateImage (true);
-            crossPlatformDelay (1);
-        }
-
-        // Reset zoom button pressed
-        if (button_states[11] && !is_rendering) {
-            is_outdated_render = true;
-            console_text = "Outdated!";
-            image_needs_update = true;
-            lowres_hm->setZoom (1.0);
-            hm->setZoom (1.0);
-            lowres_hm->generateImage (true);
-            crossPlatformDelay (1);
-        }
-
-        // Save Image button pressed
-        if (button_states[3] && !is_rendering && modal_view_state == 0) {
-            bool result = false;
-            if (is_outdated_render) {
-                result = lowres_hm->autoWriteImage(IMAGE_TYPE::PGM);
-            } else {
-                result = hm->autoWriteImage (IMAGE_TYPE::PGM);
-            }
-            if (result) {
-                console_text = "Image saved successfully.";
-            } else {
-                console_text = "Image saving failed.";
-            }
-        }
-
-        if (button_states[4] && !is_rendering) std::cout << "Save Render State." << std::endl;
-        if (button_states[5] && !is_rendering) std::cout << "Load Render State." << std::endl;
-        
-        // Movement buttons pressed
-        if ((button_states[6] || IsKeyDown(KEY_UP)) && !is_rendering) {
-            long double new_offset = hm->getOffsetY() + (MOVE_STEP_FACTOR/hm->getZoom());
-            hm->setOffsetY (new_offset);
-            lowres_hm->setOffsetY (new_offset);
-            is_outdated_render = true;
-            console_text = "Outdated!";
-            image_needs_update = true;
-            lowres_hm->generateImage (true);
-            crossPlatformDelay (1);
-        }
-        if ((button_states[7] || IsKeyDown(KEY_LEFT)) && !is_rendering) {
-            long double new_offset = hm->getOffsetX() - (MOVE_STEP_FACTOR/hm->getZoom());
-            hm->setOffsetX (new_offset);
-            lowres_hm->setOffsetX (new_offset);
-            is_outdated_render = true;
-            console_text = "Outdated!";
-            image_needs_update = true;
-            lowres_hm->generateImage (true);
-            crossPlatformDelay (1);
-        }
-        if ((button_states[8] || IsKeyDown(KEY_RIGHT)) && !is_rendering) {
-            long double new_offset = hm->getOffsetX() + (MOVE_STEP_FACTOR/hm->getZoom());
-            hm->setOffsetX (new_offset);
-            lowres_hm->setOffsetX (new_offset);
-            is_outdated_render = true;
-            console_text = "Outdated!";
-            image_needs_update = true;
-            lowres_hm->generateImage (true);
-            crossPlatformDelay (1);
-        }
-        if ((button_states[9] || IsKeyDown(KEY_DOWN)) && !is_rendering) {
-            long double new_offset = hm->getOffsetY() - (MOVE_STEP_FACTOR/hm->getZoom());
-            hm->setOffsetY (new_offset);
-            lowres_hm->setOffsetY (new_offset);
-            is_outdated_render = true;
-            console_text = "Outdated!";
-            image_needs_update = true;
-            lowres_hm->generateImage (true);
-            crossPlatformDelay (1);
-        }
-        
-        // Toggle show coordinates button pressed
-        if (button_states[12]) {
-            show_coords = !show_coords;
-        }
-
-        // Decrease eval limit button pressed
-        if ((button_states[13] || IsKeyDown((int)'[')) && !is_rendering && !equation_preset_dialog) {
-            int new_el = hm->getEvalLimit();
-            if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
-                new_el -= 10;
-            } else {
-                new_el--;
-            }
-            hm->setEvalLimit (new_el);
-            lowres_hm->setEvalLimit (new_el);
-            is_outdated_render = true;
-            console_text = "Outdated!";
-            image_needs_update = true;
-            lowres_hm->generateImage (true);
-            crossPlatformDelay (1);
-        }
-
-        // Increase eval limit button pressed
-        if ((button_states[14] || IsKeyDown((int)']')) && !is_rendering && !equation_preset_dialog) {
-            int new_el = hm->getEvalLimit();
-            if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
-                new_el += 10;
-            } else {
-                new_el++;
-            }
-            hm->setEvalLimit (new_el);
-            lowres_hm->setEvalLimit (new_el);
-            is_outdated_render = true;
-            console_text = "Outdated!";
-            image_needs_update = true;
-            lowres_hm->generateImage (true);
-            crossPlatformDelay (1);
-        }
-
-        // Help button pressed
-        if (button_states[15]) {
-            system ("open https://github.com/JkyProgrammer/HyperFractal/blob/main/README.md");
-        }
-        
-        BeginDrawing();
-        Color bg_col = GetColor (GuiGetStyle(00, BACKGROUND_COLOR));
-        ClearBackground(bg_col);
-
-        // Image updating code
-        if (image_needs_update) {
-            if (!hm->getIsRendering() && !is_outdated_render) {
-                UnloadImage (buffer_image);
-                UnloadTexture (buffer_texture);
-                buffer_image = convert (hm);
-                is_rendering = false;
-                console_text = "Rendering done.";
-                buffer_texture = LoadTextureFromImage(buffer_image);
-                if (needs_to_update_resolution) { hm->setResolution(image_dimension); }
-            } else if (!lowres_hm->getIsRendering()) {
-                UnloadImage (buffer_image);
-                UnloadTexture (buffer_texture);
-                buffer_image = convert (lowres_hm);
-                ImageResize (&buffer_image, hm->getResolution(), hm->getResolution());
-                buffer_texture = LoadTextureFromImage(buffer_image);
-            }
-            image_needs_update = false;
-        }
-        if (is_rendering) {
-            console_text = "Rendering: ";
-            percent = round(hm->getImageCompletionPercentage());
-            console_text += std::to_string(percent);
-            console_text += "%";
-            if (!hm->getIsRendering()) {
-                is_rendering = false;
-                image_needs_update = true;
-                is_outdated_render = false;
-            } else {
-                Image tmp = convert (hm); // Convert the current render result into an HFractalImage
-                // Write that over the HFractalImage buffer
-                ImageDraw (&buffer_image, tmp, (Rectangle){0,0,(float)hm->getResolution(),(float)hm->getResolution()}, (Rectangle){0,0,(float)hm->getResolution(),(float)hm->getResolution()}, WHITE);
-                UnloadImage (tmp); // Unload the old HFractalImage
-                UnloadTexture (buffer_texture); // Unload the old texture
-                buffer_texture = LoadTextureFromImage(buffer_image); // Reinitialise the texture from the HFractalImage
-            }
-        } 
-
-        // Draw the rendered HFractalImage      
-        Vector2 v {0,0};
-        DrawTextureEx (buffer_texture, v, 0, (float)image_dimension/(float)buffer_texture.height, WHITE);
-        // Draw Console
-        int button_offset = 0;
-        GuiTextBox((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, (char*)console_text.c_str(), 1, false);
-        // Draw "Render Image" button
-        button_offset++;
-        button_states[0] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "Render Image");
-        // Draw render progress bar
-        button_offset++;
-        GuiProgressBar ((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "", "", percent, 0, 100);
-        // Draw zoom buttons
-        button_offset++;
-        button_states[1] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/3, BUTTON_HEIGHT}, "Zoom In");
-        button_states[11] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/3, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/3, BUTTON_HEIGHT}, "Reset Zoom");
-        button_states[2] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/(3.0f/2.0f), BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/3, BUTTON_HEIGHT}, "Zoom Out");
-        // Draw save HFractalImage button
-        button_offset++;
-        button_states[3] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "Save Image");
-        // Draw render state load/save buttons
-        button_offset++;
-        button_states[4] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, "Save Render State");
-        button_states[5] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, "Load Render State");
-        // Draw movement navigation buttons
-        button_offset++;
-        button_states[6] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width-40)/2, BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "up");
-        button_offset++;
-        button_states[7] = GuiButton((Rectangle){(float)image_dimension+(((float)control_panel_width)/2)-40, BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "left");
-        button_states[8] = GuiButton((Rectangle){(float)image_dimension+(((float)control_panel_width)/2), BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "right");
-        button_offset++;
-        button_states[9] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width-40)/2, BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "down");
-        button_offset++;
-        button_states[10] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, "Equation Presets");
-        if (button_states[10] && !is_rendering) {
-            equation_preset_dialog = true;
-            modal_view_state = 3;
-            preset_dialog_x = (float)image_dimension+(float)control_panel_width/2;
-            preset_dialog_y = BUTTON_HEIGHT*(float)(button_offset+1);
-        }
-
-        // Custom HFractalEquation input box
-        bool res = GuiTextBox ((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, equation_tmp.data(), 1, false);
-        int key = GetCharPressed();
-        if ((((int)'a' <= key && key <= (int)'c') || ((int)'x' <= key && key <= (int)'z') || key == 122 || (key >= 48 && key <= 57) || key == 94 || (key >= 40 && key <= 43) || key == 45 || key == 46 || key == 47 || key == 'i') && !is_rendering) {
-            equation_tmp += (char)key;
-            hm->setEquation (equation_tmp);
-            lowres_hm->setEquation (equation_tmp);
-            if (lowres_hm->generateImage (true)) console_text = "Invalid HFractalEquation input";
-            else {
-                is_outdated_render = true;
-                console_text = "Outdated!";
-                image_needs_update = true;
-            }
-        } else if (GetKeyPressed () == KEY_BACKSPACE && !is_rendering && equation_tmp.length() > 0) {
-            equation_tmp.pop_back();
-            hm->setEquation(equation_tmp);
-            lowres_hm->setEquation(equation_tmp);
-            if (lowres_hm->generateImage (true)) console_text = "Invalid HFractalEquation input";
-            else {
-                is_outdated_render = true;
-                console_text = "Outdated!";
-                image_needs_update = true;
-            }
-        }
-        button_offset++;
-
-        // Coordinate toggle button
-        string coord_button_text = "Hide coordinates";
-        if (!show_coords) coord_button_text = "Show coordinates";
-        button_states[12] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, coord_button_text.c_str());
-        button_offset++;
-
-        button_states[13] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/4, BUTTON_HEIGHT}, "<");
-        button_states[14] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width/4)*3, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/4, BUTTON_HEIGHT}, ">");
-        char evalLimString[16];
-        sprintf (evalLimString, "%d (%d)", hm->getEvalLimit(), lowres_hm->getEvalLimit());
-        GuiTextBox ((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, evalLimString, 1, false);
-        button_offset++;
-        
-        button_states[15] = GuiButton((Rectangle){(float)image_dimension, (float)GetScreenHeight()-(2*BUTTON_HEIGHT), (float)control_panel_width, BUTTON_HEIGHT*2}, "Help & Instructions");
-
-        // Clear all button states to prevent clicking 'through' HFractalEquation preset buttons
-        if (modal_view_state == 3) {
-            for (int i = 0; i < BUTTON_NUM_TOTAL; i++) button_states[i] = false;
-        }
-
-        // Draw the HFractalEquation preset dialog
-        if (equation_preset_dialog && modal_view_state == 3) {
-            for (int e = 1; e <= NUM_EQUATION_PRESETS; e++) {
-                if (
-                    GuiButton((Rectangle){preset_dialog_x, preset_dialog_y+(BUTTON_HEIGHT*(e-1)), (float)control_panel_width/2, BUTTON_HEIGHT}, equationPreset(e, true).c_str())
-                && !is_rendering
-                ) {
-                    equation_preset_dialog = false;
-                    modal_view_state = 0;
-                    equation_tmp = equationPreset (e, false);
-                    hm->setEquation (equation_tmp);
-                    lowres_hm->setEquation (equation_tmp);
-                    if (lowres_hm->generateImage (true)) console_text = "Invalid HFractalEquation input";
-                    else {
-                        is_outdated_render = true;
-                        console_text = "Outdated!";
-                        image_needs_update = true;
-                    }
-                }
-            }
-            if (GetMouseX() < preset_dialog_x || GetMouseX() > preset_dialog_x + (float)control_panel_width/2 ||  GetMouseY() < preset_dialog_y - BUTTON_HEIGHT || GetMouseY() > preset_dialog_y + (BUTTON_HEIGHT*NUM_EQUATION_PRESETS)) {
-                equation_preset_dialog = false;
-                modal_view_state = 0;
-            }
-        }
-
-        // Drawing the info dialog
-        if (dialog_text != "") {
-            float box_width = (2.0/3.0)*GetScreenWidth();
-            DrawRectangle (0, 0, GetScreenWidth(), GetScreenHeight(), (Color){200, 200, 200, 128});
-
-            // bool isHelp = dialog_text == "_HELP";
-            // if (isHelp) {
-            //     dialog_text = "";
-            //     dialog_text += HELP_PARA1;
-            //     dialog_text += "\n\n";
-            //     dialog_text += HELP_PARA2;
-            //     dialog_text += "\n\n";
-            //     dialog_text += HELP_PARA3;
-
-            //     float charSize = MeasureText ("A", HELP_TEXT_SIZE);
-            //     dialog_text = textWrap (dialog_text, box_width/charSize);
-            //     
-            //     Rectangle text_rec = (Rectangle){
-            //         ((float)GetScreenWidth()-box_width-10)/2, 
-            //         ((float)(GetScreenHeight()/2)-10)/2, 
-            //         box_width+10, 
-            //         (float)(GetScreenHeight()/2)+10
-            //     };
-            //     DrawRectangleRec (text_rec, RED);
-            //     GuiDrawText (dialog_text.c_str(), text_rec, GUI_TEXT_ALIGN_LEFT, BLACK);
-            //     dialog_text = "_HELP";
-            //} else {
-                Rectangle text_rec = (Rectangle){
-                    ((float)GetScreenWidth()-box_width-10)/2, 
-                    ((float)GetScreenHeight()-DIALOG_TEXT_SIZE-10)/2, 
-                    box_width+10, 
-                    DIALOG_TEXT_SIZE
-                };
-                GuiDrawText (dialog_text.c_str(), text_rec, GUI_TEXT_ALIGN_CENTER, BLACK);
-            //}
-
-            GuiUnlock();
-            bool close = GuiButton((Rectangle){(float)(GetScreenWidth()-box_width-10)/2, (float)(GetScreenHeight()*(3.0/4.0)+10), (float)(box_width+10), (float)(DIALOG_TEXT_SIZE+10)}, "OK");
-            if (close) dialog_text = "";
-        }
-
-        // Draw coordinates text next to cursor
-        if (dialog_text == "" && show_coords && GetMouseX() <= image_dimension && GetMouseY() <= image_dimension) {
-            float left = GetMouseX()+15;
-            float top = GetMouseY()+15;
-            Color col {250, 250, 250, 200};
-            
-            long double location_x = hm->getOffsetX() + ((long double)(((long double)GetMouseX()/(image_dimension/2))-1))/hm->getZoom();
-            long double location_y = hm->getOffsetY() - ((long double)(((long double)GetMouseY()/(image_dimension/2))-1))/hm->getZoom();
-            char t[142];
-            sprintf (t, "%.10Lf\n%.10Lf", location_x, location_y);
-            DrawRectangle (left, top, 115, 40, col);
-            DrawText (t, left+5, top, 15, BLACK);
-        }
-
-        EndDrawing();
-        GuiUnlock();
     }
 
+    // Draw the info dialog
+    if (modal_view_state == MODAL_VIEW_STATE::MVS_TEXT_DIALOG) {
+        float box_width = (2.0/3.0)*GetScreenWidth();
+        DrawRectangle (0, 0, GetScreenWidth(), GetScreenHeight(), (Color){200, 200, 200, 128});
+        Rectangle text_rec = (Rectangle){
+            ((float)GetScreenWidth()-box_width-10)/2, 
+            ((float)GetScreenHeight()-DIALOG_TEXT_SIZE-10)/2, 
+            box_width+10, 
+            DIALOG_TEXT_SIZE
+        };
+        GuiDrawText (dialog_text.c_str(), text_rec, GUI_TEXT_ALIGN_CENTER, BLACK);
+        button_states[BUTTON_ID::BUTTON_ID_TEXT_DIALOG_CLOSE] = GuiButton((Rectangle){(float)(GetScreenWidth()-box_width-10)/2, (float)(GetScreenHeight()*(3.0/4.0)+10), (float)(box_width+10), (float)(DIALOG_TEXT_SIZE+10)}, "OK");
+    }
+
+    // Draw coordinates text next to cursor
+    if (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL && showing_coordinates && GetMouseX() <= image_dimension && GetMouseY() <= image_dimension) {
+        float left = GetMouseX()+15;
+        float top = GetMouseY()+15;
+        Color col {250, 250, 250, 200};
+        
+        long double location_x = hm->getOffsetX() + ((long double)(((long double)GetMouseX()/(image_dimension/2))-1))/hm->getZoom();
+        long double location_y = hm->getOffsetY() - ((long double)(((long double)GetMouseY()/(image_dimension/2))-1))/hm->getZoom();
+        char t[142];
+        sprintf (t, "%.10Lf\n%.10Lf", location_x, location_y);
+        DrawRectangle (left, top, 115, 40, col);
+        DrawText (t, left+5, top, 15, BLACK);
+    }
+    
+    EndDrawing();
+}
+
+void HFractalGui::escapeEquationPresetDialog(int e) {
+    modal_view_state = MODAL_VIEW_STATE::MVS_NORMAL;
+    if (e != -1) {
+        equation_buffer = equationPreset (e, false);
+        hm->setEquation (equation_buffer);
+        lowres_hm->setEquation (equation_buffer);
+        if (!hm->isValidEquation()) console_text = "Invalid HFractalEquation input";
+        else {
+            parametersWereModified();
+        }
+    }
+}
+
+void HFractalGui::enterEquationPresetDialog() {
+    if (is_rendering) return;
+    modal_view_state = MODAL_VIEW_STATE::MVS_EQUATION_PRESET_SELECTOR;
+}
+
+Image HFractalGui::getImage(HFractalMain* h) {
+    int size = h->getResolution();
+    uint32_t *data = h->getRGBAImage(selected_palette);
+    Color *pixels = (Color *)malloc (size*size*sizeof(Color));
+    for (int i = 0; i < size*size; i++)
+        pixels[i] = (Color) {(unsigned char)((data[i] & 0xff000000) >> (8*3)),
+                             (unsigned char)((data[i] & 0x00ff0000) >> (8*2)),
+                             (unsigned char)((data[i] & 0x0000ff00) >> (8*1)),
+                             (unsigned char)(data[i] & 0x000000ff)};
+    Image img = {
+        .data = pixels,
+        .width = size,
+        .height = size,
+        .mipmaps = 1,
+        .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
+    };
+    return img;
+}
+
+bool HFractalGui::handleClickNavigation() {
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !is_rendering) {
+        Vector2 mpos = GetMousePosition();
+        if (mpos.x <= image_dimension && mpos.y <= image_dimension) {
+            long double change_in_x = (long double)((mpos.x / (image_dimension / 2)) - 1) / hm->getZoom();
+            long double change_in_y = (long double)((mpos.y / (image_dimension / 2)) - 1) / hm->getZoom();
+            long double new_offset_x = hm->getOffsetX() + change_in_x;
+            long double new_offset_y = hm->getOffsetY() - change_in_y;
+            lowres_hm->setOffsetX(new_offset_x);
+            lowres_hm->setOffsetY(new_offset_y);
+            hm->setOffsetX(new_offset_x);
+            hm->setOffsetY(new_offset_y);
+            parametersWereModified();
+            return true;
+        }
+    }
+    return false;
+}
+
+void HFractalGui::launchTextDialog(std::string text) {
+    modal_view_state = MODAL_VIEW_STATE::MVS_TEXT_DIALOG;
+    dialog_text = text;
+}
+
+void HFractalGui::closeTextDialog() {
+    modal_view_state = MODAL_VIEW_STATE::MVS_NORMAL;
+    dialog_text = "";
+}
+
+void HFractalGui::zoomIn() {
+    if (hm->getZoom() <= SCALE_DEPTH_LIMIT) {
+        long double new_zoom = hm->getZoom() * SCALE_STEP_FACTOR;
+        lowres_hm->setZoom (new_zoom);
+        hm->setZoom (new_zoom);
+        parametersWereModified();
+    } else launchTextDialog ("Zoom precision limit reached");
+}
+
+void HFractalGui::zoomOut() {
+    long double new_zoom = hm->getZoom() / SCALE_STEP_FACTOR;
+    lowres_hm->setZoom (new_zoom);
+    hm->setZoom (new_zoom);
+    parametersWereModified();
+}
+
+void HFractalGui::resetZoom() {
+    lowres_hm->setZoom(1);
+    hm->setZoom(1);
+    parametersWereModified();
+}
+
+void HFractalGui::saveImage() {
+    bool result = false;
+    if (is_outdated_render) {
+        result = lowres_hm->autoWriteImage(IMAGE_TYPE::PGM);
+        console_text = "Saved preview render to desktop.";
+    } else {
+        result = hm->autoWriteImage (IMAGE_TYPE::PGM);
+        console_text = "Saved render to desktop.";
+    }
+    if (!result) {
+        console_text = "Image saving failed.";
+    }
+}
+
+void HFractalGui::showSaveStateDialog() {
+    assert (false);
+}
+
+void HFractalGui::showLoadStateDialog() {
+    assert (false);
+}
+
+void HFractalGui::moveUp() {
+    long double new_offset = hm->getOffsetY() + (MOVE_STEP_FACTOR/hm->getZoom());
+    hm->setOffsetY (new_offset);
+    lowres_hm->setOffsetY (new_offset);
+    parametersWereModified();
+}
+
+void HFractalGui::moveLeft() {
+    long double new_offset = hm->getOffsetX() - (MOVE_STEP_FACTOR/hm->getZoom());
+    hm->setOffsetX (new_offset);
+    lowres_hm->setOffsetX (new_offset);
+    parametersWereModified();
+}
+
+void HFractalGui::moveRight() {
+    long double new_offset = hm->getOffsetX() + (MOVE_STEP_FACTOR/hm->getZoom());
+    hm->setOffsetX (new_offset);
+    lowres_hm->setOffsetX (new_offset);
+    parametersWereModified();
+}
+
+void HFractalGui::moveDown() {
+    long double new_offset = hm->getOffsetY() - (MOVE_STEP_FACTOR/hm->getZoom());
+    hm->setOffsetY (new_offset);
+    lowres_hm->setOffsetY (new_offset);
+    parametersWereModified();
+}
+
+void HFractalGui::toggleCoords() {
+    showing_coordinates = !showing_coordinates;
+}
+
+void HFractalGui::evalLimitLess() {
+    int new_el = hm->getEvalLimit();
+    if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
+        new_el -= 10;
+    } else {
+        new_el--;
+    }
+    hm->setEvalLimit (new_el);
+    lowres_hm->setEvalLimit (new_el);
+    parametersWereModified();
+}
+
+void HFractalGui::evalLimitMore() {
+    int new_el = hm->getEvalLimit();
+    if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
+        new_el += 10;
+    } else {
+        new_el++;
+    }
+    hm->setEvalLimit (new_el);
+    lowres_hm->setEvalLimit (new_el);
+    parametersWereModified();
+}
+
+void HFractalGui::showHelp() {
+    system ("open https://github.com/JkyProgrammer/HyperFractal/blob/main/README.md");
+}
+
+bool HFractalGui::handleButtonPresses() {
+    if (is_rendering) return false;
+    if (modal_view_state == MODAL_VIEW_STATE::MVS_TEXT_DIALOG) {
+        if (button_states[BUTTON_ID::BUTTON_ID_TEXT_DIALOG_CLOSE]) { closeTextDialog(); return true; }
+    } else {
+        if (button_states[BUTTON_ID::BUTTON_ID_RENDER]) { startFullRender(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_ZOOM_IN]) { zoomIn(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_ZOOM_OUT]) { zoomOut(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_SAVE_IMAGE]) { saveImage(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_SAVE_RSTATE]) { showSaveStateDialog(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_LOAD_RSTATE]) { showLoadStateDialog(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_UP]) { moveUp(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_LEFT]) { moveLeft(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_RIGHT]) { moveRight(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_DOWN]) { moveDown(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_EQ_PRESETS]) { enterEquationPresetDialog(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_ZOOM_RESET]) { resetZoom(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_TOGGLE_COORDS]) { toggleCoords(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_EVAL_LIM_LESS]) { evalLimitLess(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_EVAL_LIM_MORE]) { evalLimitMore(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_HELP]) { showHelp(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_EQ_INPUTBOX]) { is_textbox_focussed = true; return true; }
+    }
+
+    return false;
+}
+
+void HFractalGui::clearButtonStates() {
+    for (int i = 0; i < BUTTON_NUM_TOTAL; i++) {
+        button_states[i] = false;
+    }
+}
+
+void HFractalGui::tryUnloadImage() {
     UnloadImage (buffer_image);
+}
+
+void HFractalGui::tryUnloadTexture() {
     UnloadTexture (buffer_texture);
+}
+
+bool HFractalGui::handleKeyPresses() {
+    if (IsKeyDown(KEY_ESCAPE)) { is_textbox_focussed = false; return true; }
+    if (!is_textbox_focussed) {
+        for (auto key : key_map) {
+            if (IsKeyDown (key.first)) {
+                button_states[key.second] = true;
+                return true;
+            }
+        }
+    } else {
+        if (IsKeyDown(KEY_ENTER)) { button_states[BUTTON_ID::BUTTON_ID_RENDER] = true; return true; }
+        int key = GetCharPressed();
+        if ((((int)'a' <= key && key <= (int)'c') || ((int)'x' <= key && key <= (int)'z') || key == 122 || (key >= 48 && key <= 57) || key == 94 || (key >= 40 && key <= 43) || key == 45 || key == 46 || key == 47 || key == 'i') && !is_rendering) {
+            equation_buffer += (char)key;
+            hm->setEquation (equation_buffer);
+            lowres_hm->setEquation (equation_buffer);
+            if (!hm->isValidEquation()) console_text = "Invalid equation input";
+            else parametersWereModified();
+        } else if (GetKeyPressed () == KEY_BACKSPACE && !is_rendering && equation_buffer.length() > 0) {
+            equation_buffer.pop_back();
+            hm->setEquation(equation_buffer);
+            lowres_hm->setEquation(equation_buffer);
+            if (!hm->isValidEquation()) console_text = "Invalid equation input";
+            else parametersWereModified();
+        }
+    }
+    return false;
+}
+
+int HFractalGui::guiMain() {
+    configureGUI();
+    parametersWereModified();
+    while(!WindowShouldClose()) {
+        checkWindowResize();
+        if (!is_rendering && modal_view_state == MVS_NORMAL) {
+            bool click_handled = handleClickNavigation();
+            if (click_handled) { is_textbox_focussed = false; }
+        }
+        handleKeyPresses();
+        bool button_pressed = handleButtonPresses();
+        if (button_pressed && !button_states[BUTTON_ID::BUTTON_ID_EQ_INPUTBOX]) { is_textbox_focussed = false; }
+        clearButtonStates();
+        if (is_rendering) updateFullRender();
+        drawInterface();
+    }
+    tryUnloadImage();
+    tryUnloadTexture();
     CloseWindow();
     return 0;
 }
+
+HFractalGui::HFractalGui() {}
+
