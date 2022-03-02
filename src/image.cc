@@ -1,8 +1,5 @@
 #include "image.hh"
-#include "utils.hh"
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
+
 #include <ostream>
 #include <math.h>
 

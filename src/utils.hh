@@ -45,4 +45,4 @@ std::string equationPreset (EQ_PRESETS, bool);
 // Get information about a colour palette preset
 std::string colourPalettePreset (CP_PRESETS);
 
-#endif // !UTILS_H
+#endif

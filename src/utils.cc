@@ -1,7 +1,4 @@
 #include "utils.hh"
-#include <chrono>
-
-using namespace std;
 
 #ifdef _WIN32
 #include <windows.h>
@@ -9,6 +6,8 @@ using namespace std;
 #else
     #include <unistd.h>
 #endif
+
+using namespace std;
 
 /**
  * @brief Get the details of an equation preset

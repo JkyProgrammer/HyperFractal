@@ -1,6 +1,6 @@
 #include "equationparser.hh"
+
 #include <vector>
-#include <iostream>
 
 using namespace std;
 

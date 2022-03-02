@@ -1,8 +1,10 @@
 #include "fractal.hh"
-#include "utils.hh"
-#include <iostream>
-#include <chrono>
+
 #include <stack>
+#include <complex>
+
+#include "utils.hh"
+
 using namespace std;
 
 /**

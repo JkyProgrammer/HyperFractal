@@ -1,10 +1,10 @@
+#ifndef DATABASE_H
+#define DATABASE_H
+
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <cstring>
-
-#ifndef DATABASE_H
-#define DATABASE_H
 
 // Struct describing the Config Profile record type
 struct HFractalConfigProfile {

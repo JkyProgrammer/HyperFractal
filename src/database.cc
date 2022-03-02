@@ -218,7 +218,6 @@ bool HFractalDatabase::read () {
                 // Attempt to convert the record to a config profile
                 vector<string> components = componentify (line);
                 config = new HFractalConfigProfile ();
-                cout << components[0] << endl;
                 config->profile_id = stol(components[0]);
                 config->x_offset = stold(components[1]);
                 config->y_offset = stold(components[2]);

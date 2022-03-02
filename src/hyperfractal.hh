@@ -1,16 +1,18 @@
 #ifndef HYPERFRACTAL_H
 #define HYPERFRACTAL_H
-// When defined, progress updates will be written to terminal.
-//#define TERMINAL_UPDATES
 
 #include <string>
 #include <thread>
 #include <vector>
 #include <map>
+
 #include "image.hh"
 #include "fractal.hh"
 #include "utils.hh"
 #include "equationparser.hh"
+
+// When defined, progress updates will be written to terminal.
+//#define TERMINAL_UPDATES
 
 // Class defining a fractal rendering environment, fully encapsulated
 class HFractalMain {

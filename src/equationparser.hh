@@ -1,9 +1,10 @@
-#include "fractal.hh"
+#ifndef EQUATIONPARSER_H
+#define EQUATIONPARSER_H
+
 #include <string>
 #include <vector>
 
-#ifndef EQUATIONPARSER_H
-#define EQUATIONPARSER_H
+#include "fractal.hh"
 
 // Enum describing the token type for the intermediate parser
 enum INTERMEDIATE_TOKEN_TYPE {
@@ -19,7 +20,7 @@ struct IntermediateToken {
     double num_val;
     char let_val;
     char op_val;
-    vector<IntermediateToken> bracket_val;
+    std::vector<IntermediateToken> bracket_val;
 };
 
 // Enum describing the error types from the equation processor checking function

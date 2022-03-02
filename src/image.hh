@@ -1,8 +1,7 @@
-#include <stdint.h>
-#include <mutex>
-
 #ifndef IMAGE_H
 #define IMAGE_H
+
+#include <mutex>
 
 // Class containing information about an image currently being generated
 class HFractalImage {
@@ -30,11 +29,4 @@ public:
     static const uint32_t BLACK = 0x000000ff; // Colour constant for black
 };
 
-#include <iostream>
-inline std::ostream & operator<<(std::ostream & Str, HFractalImage & v) { 
-  std::cout << "Image :" << &v << std::endl;
-  std::cout << v.getInd() << std::endl;
-  std::cout << v.isDone() << std::endl;
-  return Str;
-}
 #endif

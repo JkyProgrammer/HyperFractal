@@ -1,9 +1,11 @@
 #include "hyperfractal.hh"
-#include "utils.hh"
+
 #include <iostream>
 #include <iomanip>
 #include <chrono>
 #include <thread>
+
+#include "utils.hh"
 
 using namespace std;
 using namespace std::chrono;
