@@ -37,3 +37,10 @@ int main (int argc, char *argv[]) {
         return guiMain();
     }
 }
+
+// TODO: Add comments to all the code
+// TODO: Rewrite pixel distribution
+// TODO: Remove all debugging related stuff
+// TODO: Add a 'jump to' dialog
+// TODO: Database system
+// TODO: PNG writing

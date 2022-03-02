@@ -1,10 +1,9 @@
 #include "utils.hh"
 #include <chrono>
-#include <ctime>
-#include <vector>
+
+using namespace std;
 
 #ifdef _WIN32
-//#include "dll.h"
 #include <windows.h>
 #include <shlobj.h>
 #else
@@ -12,11 +11,11 @@
 #endif
 
 /**
- * @brief 
+ * @brief Get the details of an equation preset
  * 
- * @param i 
- * @param t 
- * @return string 
+ * @param p The preset to return
+ * @param t True - return the name of the preset, False - return the string equation of it instead
+ * @return Either the name or the equation string of the equation preset 
  */
 string equationPreset (EQ_PRESETS p, bool t) {
     switch (p) {
@@ -40,6 +39,12 @@ string equationPreset (EQ_PRESETS p, bool t) {
     return "";
 }
 
+/**
+ * @brief Return the name of a colour palette preset
+ * 
+ * @param p Preset to return
+ * @return The string name of the colour palette
+ */
 string colourPalettePreset (CP_PRESETS p) {
     switch (p) {
     case CP_VAPORWAVE:
@@ -58,23 +63,32 @@ string colourPalettePreset (CP_PRESETS p) {
     return "";
 }
 
-string textWrap (string s, int lineLength) {
+/**
+ * @brief Wrap text given a certain line length
+ * 
+ * @param s String to wrap
+ * @param line_length Numbere of characters which limit the length of the line
+ * @return string 
+ */
+string textWrap (string s, int line_length) {
     string output = "";
-    int lineOffset = 0;
+    int line_offset = 0;
     for (char c : s) {
-        if (c == '\n') lineOffset = -1;
-        if (lineOffset == lineLength-1) { if (c != ' ') output += "-"; output += "\n"; lineOffset = 0; }
-        if (!(lineOffset == 0 && c == ' ')) {
+        if (c == '\n') line_offset = -1;
+        if (line_offset == line_length-1) { if (c != ' ') output += "-"; output += "\n"; line_offset = 0; }
+        if (!(line_offset == 0 && c == ' ')) {
             output += c;
-            lineOffset++;
+            line_offset++;
         }
     }
     return output;
 }
 
-using namespace std;
-using namespace chrono;
-
+/**
+ * @brief Get the desktop path of the user
+ * 
+ * @return The user's desktop path
+ */
 string getDesktopPath () {
     #ifdef _WIN32
     static char path[MAX_PATH+1];
@@ -87,6 +101,11 @@ string getDesktopPath () {
     #endif
 }
 
+/**
+ * @brief Delay for a number of millisecods, across any platform
+ * 
+ * @param milliseconds Time to delay
+ */
 void crossPlatformDelay(int milliseconds) {
     #ifdef _WIN32
         Sleep(milliseconds);

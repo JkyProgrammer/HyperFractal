@@ -27,12 +27,16 @@ JWildfire - although very powerful, also quite complex and has a learning curve 
 Ultra Fractal - incredibly powerful and fully featured, but allows only a 30-day free trial before costing £25-80
 Apophysis - limited range of fractals but lacks help/instructions
 
-The user is likely to be one of three main categories:
+The user of my application is likely to be one of three main categories:
 * A teacher looking to engage and excite students and make maths classes more practical (particular for teaching topics such as complex numbers or iterative/numerical methods)
 * A student learning maths interested in exploring mathematical phenomena or putting them to the test
 * Ordinary non-mathematical people lookging to experiment in abstract design or maths
 
-However, my primary client for the project will be a member of the mathematics department at my school. // TODO: speak with user and report!
+However, my primary client for the project will be a teacher from the mathematics department at my school. I interviewed them on their thoughts about the problem and basic requirements for a solution.
+
+> This tool would be very useful as a form of enrichment to the maths syllabus. I might expect to use it towards the end of term, or early on in the school to show students how exciting and beautiful maths can be, especially given the intriguing nature of fractals. This would also be an interesting extension exercise for sixth form students to investigate applications of complex numbers.
+> 
+> A solution would need to be quick to set up and responsive, to keep students engaged. It should also be visually appealing. There should be the ability to see how the images are generated for sixth form students interested in maths and computing.
 
 ## The Solution
 
