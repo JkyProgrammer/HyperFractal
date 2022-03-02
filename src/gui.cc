@@ -73,7 +73,7 @@ void HFractalGui::configureGUI() {
     render_percentage = 0;
     showing_coordinates = false;
     modal_view_state = MVS_NORMAL;
-    selected_palette = 0;
+    selected_palette = CP_RAINBOW;
     is_textbox_focussed = false;
 
     // Fetch configuration
@@ -127,11 +127,7 @@ void HFractalGui::parametersWereModified() {
 bool HFractalGui::updatePreviewRender() {
     if (!lowres_hm->isValidEquation()) return false;
     lowres_hm->generateImage(true);
-    tryUnloadImage();
-    tryUnloadTexture();
-    buffer_image = getImage(lowres_hm);
-    ImageResize(&buffer_image, image_dimension, image_dimension);
-    buffer_texture = LoadTextureFromImage(buffer_image);
+    reloadImageFrom(lowres_hm);
     return true;
 }
 
@@ -162,13 +158,19 @@ bool HFractalGui::updateFullRender() {
     } else {
         is_outdated_render = false;
         is_rendering = false;
-        tryUnloadImage();
-        tryUnloadTexture();
-        buffer_image = getImage(hm);
-        buffer_texture = LoadTextureFromImage(buffer_image);
+        reloadImageFrom (hm);
         console_text = "Rendering done.";
         return true;
     }
+}
+
+void HFractalGui::reloadImageFrom(HFractalMain* h) {
+    tryUnloadImage();
+    tryUnloadTexture();
+    buffer_image = getImage(h);
+    if (buffer_image.height != image_dimension)
+        ImageResize(&buffer_image, image_dimension, image_dimension);
+    buffer_texture = LoadTextureFromImage(buffer_image);
 }
 
 void HFractalGui::checkWindowResize() {
@@ -241,16 +243,20 @@ void HFractalGui::drawInterface() {
     sprintf (evalLimString, "%d (%d)", hm->getEvalLimit(), lowres_hm->getEvalLimit());
     GuiTextBox ((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, evalLimString, 1, false);
     button_offset++;
-        
+
+    // Colour palette preset selector button
+    button_states[BUTTON_ID::BUTTON_ID_CP_PRESETS] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "Colour Palettes") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
+
+     
     button_states[BUTTON_ID::BUTTON_ID_HELP] = GuiButton((Rectangle){(float)image_dimension, (float)GetScreenHeight()-(2*BUTTON_HEIGHT), (float)control_panel_width, BUTTON_HEIGHT*2}, "Help & Instructions") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
 
     // Draw the equation preset dialog
     if (modal_view_state == MODAL_VIEW_STATE::MVS_EQUATION_PRESET_SELECTOR) {
         float preset_dialog_x = (float)image_dimension+(float)control_panel_width/2;
         float preset_dialog_y = BUTTON_HEIGHT*10.0f;
-        for (int e = 1; e <= NUM_EQUATION_PRESETS; e++) {
+        for (int e = 0; e < NUM_EQUATION_PRESETS; e++) {
             if (
-                GuiButton((Rectangle){preset_dialog_x, preset_dialog_y+(BUTTON_HEIGHT*(e-1)), (float)control_panel_width/2, BUTTON_HEIGHT}, equationPreset(e, true).c_str())
+                GuiButton((Rectangle){preset_dialog_x, preset_dialog_y+(BUTTON_HEIGHT*e), (float)control_panel_width/2, BUTTON_HEIGHT}, equationPreset((EQ_PRESETS)e, true).c_str())
             && !is_rendering
             ) {
                 escapeEquationPresetDialog(e);
@@ -258,6 +264,24 @@ void HFractalGui::drawInterface() {
         }
         if (GetMouseX() < preset_dialog_x || GetMouseX() > preset_dialog_x + (float)control_panel_width/2 ||  GetMouseY() < preset_dialog_y - BUTTON_HEIGHT || GetMouseY() > preset_dialog_y + (BUTTON_HEIGHT*NUM_EQUATION_PRESETS)) {
             escapeEquationPresetDialog(-1);
+        }
+    }
+
+    // Draw the colour palette preset dialog
+    if (modal_view_state == MODAL_VIEW_STATE::MVS_COLOUR_PRESET_SELECTOR) {
+        float preset_dialog_x = (float)image_dimension;
+        float preset_dialog_y = BUTTON_HEIGHT*13.0f;
+        for (int c = 0; c < NUM_COLOUR_PRESETS; c++) {
+            cout << "a" << endl;
+            if (
+                GuiButton((Rectangle){preset_dialog_x, preset_dialog_y+(BUTTON_HEIGHT*c), (float)control_panel_width, BUTTON_HEIGHT}, colourPalettePreset((CP_PRESETS)c).c_str())
+            && !is_rendering
+            ) {
+                escapeColourPalettePresetDialog(c);
+            }
+        }
+        if (GetMouseX() < preset_dialog_x || GetMouseX() > preset_dialog_x + (float)control_panel_width ||  GetMouseY() < preset_dialog_y - BUTTON_HEIGHT || GetMouseY() > preset_dialog_y + (BUTTON_HEIGHT*NUM_COLOUR_PRESETS)) {
+            escapeColourPalettePresetDialog(-1);
         }
     }
 
@@ -294,8 +318,9 @@ void HFractalGui::drawInterface() {
 
 void HFractalGui::escapeEquationPresetDialog(int e) {
     modal_view_state = MODAL_VIEW_STATE::MVS_NORMAL;
+    if (is_rendering) return;
     if (e != -1) {
-        equation_buffer = equationPreset (e, false);
+        equation_buffer = equationPreset ((EQ_PRESETS)e, false);
         hm->setEquation (equation_buffer);
         lowres_hm->setEquation (equation_buffer);
         if (!hm->isValidEquation()) console_text = "Invalid equation input";
@@ -308,6 +333,24 @@ void HFractalGui::escapeEquationPresetDialog(int e) {
 void HFractalGui::enterEquationPresetDialog() {
     if (is_rendering) return;
     modal_view_state = MODAL_VIEW_STATE::MVS_EQUATION_PRESET_SELECTOR;
+}
+
+void HFractalGui::enterColourPalettePresetDialog() {
+    if (is_rendering) return;
+    modal_view_state = MODAL_VIEW_STATE::MVS_COLOUR_PRESET_SELECTOR;
+}
+
+void HFractalGui::escapeColourPalettePresetDialog(int c) {
+    modal_view_state = MODAL_VIEW_STATE::MVS_NORMAL;
+    if (is_rendering) return;
+    if (c != -1) {
+        selected_palette = (CP_PRESETS)c;
+        if (is_outdated_render) {
+            reloadImageFrom(lowres_hm);
+        } else {
+            reloadImageFrom(hm);
+        }
+    }
 }
 
 Image HFractalGui::getImage(HFractalMain* h) {
@@ -432,7 +475,6 @@ void HFractalGui::moveDown() {
 
 void HFractalGui::toggleCoords() {
     showing_coordinates = !showing_coordinates;
-    assert (false);
 }
 
 void HFractalGui::evalLimitLess() {
@@ -485,6 +527,7 @@ bool HFractalGui::handleButtonPresses() {
         if (button_states[BUTTON_ID::BUTTON_ID_EVAL_LIM_MORE]) { evalLimitMore(); return true; }
         if (button_states[BUTTON_ID::BUTTON_ID_HELP]) { showHelp(); return true; }
         if (button_states[BUTTON_ID::BUTTON_ID_EQ_INPUTBOX]) { is_textbox_focussed = true; return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_CP_PRESETS]) { enterColourPalettePresetDialog(); return true; }
     }
 
     return false;

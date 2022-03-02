@@ -67,8 +67,8 @@ int HFractalMain::generateImage (bool wait=true) {
 
     // Detect if the HFractalEquation matches the blueprint of a preset
     int preset = -1;
-    for (int i = 1; i <= NUM_EQUATION_PRESETS; i++) {
-        if (eq == equationPreset (i, false)) {
+    for (int i = 0; i < NUM_EQUATION_PRESETS; i++) {
+        if (eq == equationPreset ((EQ_PRESETS)i, false)) {
             preset = i;
             break;
         }

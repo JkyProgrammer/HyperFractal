@@ -1,4 +1,5 @@
 #include "image.hh"
+#include "utils.hh"
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -85,7 +86,7 @@ bool HFractalImage::writePGM (std::string path) {
  * @param v Value (brightness) value
  * @return A 32 bit colour in RGBA form
  */
-uint32_t HFractalImage::HSVToRGB (float h, float s, float v) {
+uint32_t HFractalImage::HSVToRGB (float h, float s, float v) { // TODO: Test this
     float c = v * s;
     float h_ = fmod(h,1)*6;
     float x = c * (1 - fabsf(fmodf(h_, 2)-1));

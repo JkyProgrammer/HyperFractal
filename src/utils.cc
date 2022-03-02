@@ -18,22 +18,40 @@
  * @param t 
  * @return string 
  */
-string equationPreset (int i, bool t) {
-    switch (i) {
-    case 1:
+string equationPreset (EQ_PRESETS p, bool t) {
+    switch (p) {
+    case EQ_MANDELBROT:
         return t ? "Mandelbrot" : "(z^2)+c";
-    case 2:
+    case EQ_JULIA_1:
         return t ? "Juila 1" : "(z^2)+(0.285+0.01i)";
-    case 3:
+    case EQ_JULIA_2:
         return t ? "Julia 2" : "(z^2)+(-0.70176-0.3842i)";
-    case 4:
+    case EQ_RECIPROCAL:
         return t ? "Reciprocal" : "1/((z^2)+c)";
-    case 5:
+    case EQ_ZPOWER:
         return t ? "Z Power" : "(z^z)+(c-0.5)";
-    case 6:
+    case EQ_BARS:
         return t ? "Bars" : "z^(c^2)";
-    case 7:
+    case EQ_BURNINGSHIP_MODIFIED:
         return t ? "Burning Ship Modified" : "((x^2)^0.5-((y^2)^0.5)i)^2+c";
+    default:
+        return "NONE";
+    }
+    return "";
+}
+
+string colourPalettePreset (CP_PRESETS p) {
+    switch (p) {
+    case CP_VAPORWAVE:
+        return "Vaporwave";
+    case CP_YELLOWGREEN:
+        return "Yellow-Green";
+    case CP_RAINBOW:
+        return "Rainbow";
+    case CP_GREYSCALE_BRIGHT:
+        return "Greyscale Bright";
+    case CP_GREYSCALE_DARK:
+        return "Greyscale Dark";
     default:
         return "NONE";
     }

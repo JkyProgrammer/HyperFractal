@@ -2,6 +2,7 @@
 #define GUI_H
 
 #include "hyperfractal.hh"
+#include "utils.hh"
 #include <map>
 
 #define RAYGUI_IMPLEMENTATION
@@ -15,8 +16,8 @@
 #define WINDOW_INIT_WIDTH 900       // Initial window - width
 #define WINDOW_INIT_HEIGHT 550      //                - height
 #define BUTTON_HEIGHT 30            // Height of a single button in the interface
-#define ELEMENT_NUM_VERTICAL 14     // Number of vertical elements
-#define BUTTON_NUM_TOTAL 18         // Total number of buttons in the interface
+#define ELEMENT_NUM_VERTICAL 15     // Number of vertical elements
+#define BUTTON_NUM_TOTAL 19         // Total number of buttons in the interface
 #define CONTROL_MIN_WIDTH 400       // Minimum width of the control panel
 #define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL
 #define DIALOG_TEXT_SIZE 25
@@ -40,7 +41,8 @@ enum BUTTON_ID {
     BUTTON_ID_EVAL_LIM_MORE,
     BUTTON_ID_HELP,
     BUTTON_ID_TEXT_DIALOG_CLOSE,
-    BUTTON_ID_EQ_INPUTBOX
+    BUTTON_ID_EQ_INPUTBOX,
+    BUTTON_ID_CP_PRESETS
 };
 
 enum MODAL_VIEW_STATE {
@@ -82,7 +84,7 @@ private:
     MODAL_VIEW_STATE modal_view_state;
     int image_dimension;
     int control_panel_width;
-    int selected_palette;
+    CP_PRESETS selected_palette;
 
     void configureStyling();
     void configureGUI();
@@ -91,6 +93,7 @@ private:
     bool updatePreviewRender();
     bool startFullRender();
     bool updateFullRender();
+    void reloadImageFrom(HFractalMain*);
 
     void checkWindowResize();
 
@@ -102,6 +105,8 @@ private:
     Image getImage(HFractalMain*);
     void escapeEquationPresetDialog(int);
     void enterEquationPresetDialog();
+    void enterColourPalettePresetDialog();
+    void escapeColourPalettePresetDialog(int);
     void launchTextDialog(std::string);
     void closeTextDialog();
 
