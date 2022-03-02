@@ -197,57 +197,57 @@ void HFractalGui::drawInterface() {
     GuiTextBox((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, (char*)console_text.c_str(), 1, false);
     // Draw "Render Image" button
     button_offset++;
-    button_states[BUTTON_ID::BUTTON_ID_RENDER] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "Render Image");
+    button_states[BUTTON_ID::BUTTON_ID_RENDER] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "Render Image") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
     // Draw render progress bar
     button_offset++;
     GuiProgressBar ((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "", "", render_percentage, 0, 100);
     // Draw zoom buttons
     button_offset++;
-    button_states[BUTTON_ID::BUTTON_ID_ZOOM_IN] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/3, BUTTON_HEIGHT}, "Zoom In");
-    button_states[BUTTON_ID::BUTTON_ID_ZOOM_RESET] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/3, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/3, BUTTON_HEIGHT}, "Reset Zoom");
-    button_states[BUTTON_ID::BUTTON_ID_ZOOM_OUT] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/(3.0f/2.0f), BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/3, BUTTON_HEIGHT}, "Zoom Out");
-    // Draw save HFractalImage button
+    button_states[BUTTON_ID::BUTTON_ID_ZOOM_IN] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/3, BUTTON_HEIGHT}, "Zoom In") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
+    button_states[BUTTON_ID::BUTTON_ID_ZOOM_RESET] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/3, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/3, BUTTON_HEIGHT}, "Reset Zoom") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
+    button_states[BUTTON_ID::BUTTON_ID_ZOOM_OUT] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/(3.0f/2.0f), BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/3, BUTTON_HEIGHT}, "Zoom Out") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
+    // Draw save image button
     button_offset++;
-    button_states[BUTTON_ID::BUTTON_ID_SAVE_IMAGE] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "Save Image");
+    button_states[BUTTON_ID::BUTTON_ID_SAVE_IMAGE] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "Save Image") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
     // Draw render state load/save buttons
     button_offset++;
-    button_states[BUTTON_ID::BUTTON_ID_SAVE_RSTATE] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, "Save Render State");
-    button_states[BUTTON_ID::BUTTON_ID_LOAD_RSTATE] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, "Load Render State");
+    button_states[BUTTON_ID::BUTTON_ID_SAVE_RSTATE] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, "Save Render State") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
+    button_states[BUTTON_ID::BUTTON_ID_LOAD_RSTATE] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, "Load Render State") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
     // Draw movement navigation buttons
     button_offset++;
-    button_states[BUTTON_ID::BUTTON_ID_UP] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width-40)/2, BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "up");
+    button_states[BUTTON_ID::BUTTON_ID_UP] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width-40)/2, BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "up") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
     button_offset++;
-    button_states[BUTTON_ID::BUTTON_ID_LEFT] = GuiButton((Rectangle){(float)image_dimension+(((float)control_panel_width)/2)-40, BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "left");
-    button_states[BUTTON_ID::BUTTON_ID_RIGHT] = GuiButton((Rectangle){(float)image_dimension+(((float)control_panel_width)/2), BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "right");
+    button_states[BUTTON_ID::BUTTON_ID_LEFT] = GuiButton((Rectangle){(float)image_dimension+(((float)control_panel_width)/2)-40, BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "left") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
+    button_states[BUTTON_ID::BUTTON_ID_RIGHT] = GuiButton((Rectangle){(float)image_dimension+(((float)control_panel_width)/2), BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "right") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
     button_offset++;
-    button_states[BUTTON_ID::BUTTON_ID_DOWN] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width-40)/2, BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "down");
+    button_states[BUTTON_ID::BUTTON_ID_DOWN] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width-40)/2, BUTTON_HEIGHT*(float)button_offset, (float)40, BUTTON_HEIGHT}, "down") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
     button_offset++;
-    button_states[BUTTON_ID::BUTTON_ID_EQ_PRESETS] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, "Equation Presets");
+    button_states[BUTTON_ID::BUTTON_ID_EQ_PRESETS] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, "Equation Presets") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
     
     // Draw equation input box
-    button_states[BUTTON_ID::BUTTON_ID_EQ_INPUTBOX] = GuiTextBox ((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, equation_buffer.data(), 1, false);
+    button_states[BUTTON_ID::BUTTON_ID_EQ_INPUTBOX] = GuiTextBox ((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, equation_buffer.data(), 1, false) && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
     button_offset++;
 
     // Coordinate toggle button
     string coord_button_text = "Hide coordinates";
     if (!showing_coordinates) coord_button_text = "Show coordinates";
-    button_states[BUTTON_ID::BUTTON_ID_TOGGLE_COORDS] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, coord_button_text.c_str());
+    button_states[BUTTON_ID::BUTTON_ID_TOGGLE_COORDS] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, coord_button_text.c_str()) && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
     button_offset++;
 
     // Eval limit controls
-    button_states[BUTTON_ID::BUTTON_ID_EVAL_LIM_LESS] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/4, BUTTON_HEIGHT}, "<");
-    button_states[BUTTON_ID::BUTTON_ID_EVAL_LIM_MORE] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width/4)*3, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/4, BUTTON_HEIGHT}, ">");
+    button_states[BUTTON_ID::BUTTON_ID_EVAL_LIM_LESS] = GuiButton((Rectangle){(float)image_dimension+(float)control_panel_width/2, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/4, BUTTON_HEIGHT}, "<") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
+    button_states[BUTTON_ID::BUTTON_ID_EVAL_LIM_MORE] = GuiButton((Rectangle){(float)image_dimension+((float)control_panel_width/4)*3, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/4, BUTTON_HEIGHT}, ">") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
     char evalLimString[16];
     sprintf (evalLimString, "%d (%d)", hm->getEvalLimit(), lowres_hm->getEvalLimit());
     GuiTextBox ((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width/2, BUTTON_HEIGHT}, evalLimString, 1, false);
     button_offset++;
         
-    button_states[BUTTON_ID::BUTTON_ID_HELP] = GuiButton((Rectangle){(float)image_dimension, (float)GetScreenHeight()-(2*BUTTON_HEIGHT), (float)control_panel_width, BUTTON_HEIGHT*2}, "Help & Instructions");
+    button_states[BUTTON_ID::BUTTON_ID_HELP] = GuiButton((Rectangle){(float)image_dimension, (float)GetScreenHeight()-(2*BUTTON_HEIGHT), (float)control_panel_width, BUTTON_HEIGHT*2}, "Help & Instructions") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
 
     // Draw the equation preset dialog
     if (modal_view_state == MODAL_VIEW_STATE::MVS_EQUATION_PRESET_SELECTOR) {
         float preset_dialog_x = (float)image_dimension+(float)control_panel_width/2;
-        float preset_dialog_y = BUTTON_HEIGHT*13.0f;
+        float preset_dialog_y = BUTTON_HEIGHT*10.0f;
         for (int e = 1; e <= NUM_EQUATION_PRESETS; e++) {
             if (
                 GuiButton((Rectangle){preset_dialog_x, preset_dialog_y+(BUTTON_HEIGHT*(e-1)), (float)control_panel_width/2, BUTTON_HEIGHT}, equationPreset(e, true).c_str())
@@ -298,7 +298,7 @@ void HFractalGui::escapeEquationPresetDialog(int e) {
         equation_buffer = equationPreset (e, false);
         hm->setEquation (equation_buffer);
         lowres_hm->setEquation (equation_buffer);
-        if (!hm->isValidEquation()) console_text = "Invalid HFractalEquation input";
+        if (!hm->isValidEquation()) console_text = "Invalid equation input";
         else {
             parametersWereModified();
         }
@@ -432,6 +432,7 @@ void HFractalGui::moveDown() {
 
 void HFractalGui::toggleCoords() {
     showing_coordinates = !showing_coordinates;
+    assert (false);
 }
 
 void HFractalGui::evalLimitLess() {
@@ -466,7 +467,7 @@ bool HFractalGui::handleButtonPresses() {
     if (is_rendering) return false;
     if (modal_view_state == MODAL_VIEW_STATE::MVS_TEXT_DIALOG) {
         if (button_states[BUTTON_ID::BUTTON_ID_TEXT_DIALOG_CLOSE]) { closeTextDialog(); return true; }
-    } else {
+    } else if (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL) {
         if (button_states[BUTTON_ID::BUTTON_ID_RENDER]) { startFullRender(); return true; }
         if (button_states[BUTTON_ID::BUTTON_ID_ZOOM_IN]) { zoomIn(); return true; }
         if (button_states[BUTTON_ID::BUTTON_ID_ZOOM_OUT]) { zoomOut(); return true; }
