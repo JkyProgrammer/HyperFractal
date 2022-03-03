@@ -5,6 +5,7 @@
 #include <iostream>
 #include <thread>
 #include "utils.hh"
+#include "database.hh"
 #include <cassert>
 
 using namespace std;
@@ -65,6 +66,7 @@ void HFractalGui::configureGUI() {
     // Basic class initialisation
     dialog_text = "";
     console_text = "Ready.";
+    save_name_buffer = "Untitled";
     for (int i = 0; i < BUTTON_NUM_TOTAL; i++) button_states[i] = false;
     buffer_image = {};
     buffer_texture = {};
@@ -74,7 +76,8 @@ void HFractalGui::configureGUI() {
     showing_coordinates = false;
     modal_view_state = MVS_NORMAL;
     selected_palette = CP_RAINBOW;
-    is_textbox_focussed = false;
+    database_load_dialog_scroll = 0;
+    textbox_focus = TEXT_FOCUS_STATE::TFS_NONE;
 
     // Fetch configuration
     unsigned int thread_count = std::thread::hardware_concurrency ();
@@ -247,7 +250,7 @@ void HFractalGui::drawInterface() {
     // Colour palette preset selector button
     button_states[BUTTON_ID::BUTTON_ID_CP_PRESETS] = GuiButton((Rectangle){(float)image_dimension, BUTTON_HEIGHT*(float)button_offset, (float)control_panel_width, BUTTON_HEIGHT}, "Colour Palettes") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
 
-     
+    // Draw help button
     button_states[BUTTON_ID::BUTTON_ID_HELP] = GuiButton((Rectangle){(float)image_dimension, (float)GetScreenHeight()-(2*BUTTON_HEIGHT), (float)control_panel_width, BUTTON_HEIGHT*2}, "Help & Instructions") && (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL);
 
     // Draw the equation preset dialog
@@ -297,6 +300,83 @@ void HFractalGui::drawInterface() {
         };
         GuiDrawText (dialog_text.c_str(), text_rec, GUI_TEXT_ALIGN_CENTER, BLACK);
         button_states[BUTTON_ID::BUTTON_ID_TEXT_DIALOG_CLOSE] = GuiButton((Rectangle){(float)(GetScreenWidth()-box_width-10)/2, (float)(GetScreenHeight()*(3.0/4.0)+10), (float)(box_width+10), (float)(DIALOG_TEXT_SIZE+10)}, "OK");
+    }
+
+    // Draw database dialog
+    if (modal_view_state == MODAL_VIEW_STATE::MVS_DATABASE_SAVE_DIALOG || modal_view_state == MODAL_VIEW_STATE::MVS_DATABASE_LOAD_DIALOG) {
+        DrawRectangle (0, 0, GetScreenWidth(), GetScreenHeight(), (Color){200, 200, 200, 128});
+        float box_width = (2.0/3.0)*GetScreenWidth();
+        button_states[BUTTON_ID::BUTTON_ID_DATABASE_CANCEL] = GuiButton(
+            (Rectangle){
+                (float)(GetScreenWidth()-box_width-10)/2, 
+                (float)(GetScreenHeight()*(4.0/5.0)+10), 
+                (float)((box_width+10)/2.0), 
+                (float)(DIALOG_TEXT_SIZE+10)
+                }, 
+        "Cancel");
+        
+        if (modal_view_state == MODAL_VIEW_STATE::MVS_DATABASE_SAVE_DIALOG) {
+            DrawRectangle((float)((GetScreenWidth()-box_width-20)/2.0), (float)(GetScreenHeight()*(1.0/5.0)-10), (float)(box_width+20), (float)(BUTTON_HEIGHT*2 + 180), GetColor(GuiGetStyle(0, BACKGROUND_COLOR)));
+            button_states[BUTTON_ID::BUTTON_ID_SAVE] = GuiButton(
+                (Rectangle){
+                    (float)(GetScreenWidth()-10)/2, 
+                    (float)(GetScreenHeight()*(4.0/5.0)+10), 
+                    (float)((box_width+10)/2.0), 
+                    (float)(DIALOG_TEXT_SIZE+10)
+                    }, 
+            "Save");
+
+            button_states[BUTTON_ID::BUTTON_ID_SAVE_NAME_INPUTBOX] = GuiTextBox (
+                (Rectangle){
+                    (float)((GetScreenWidth()-box_width)/2.0), 
+                    (float)(GetScreenHeight()*(1.0/5.0)), 
+                    (float)(box_width), 
+                    (float)(BUTTON_HEIGHT*2)
+                    }, 
+            save_name_buffer.data(), 2, false);
+
+        } else if (modal_view_state == MODAL_VIEW_STATE::MVS_DATABASE_LOAD_DIALOG) {
+            button_states[BUTTON_ID::BUTTON_ID_LOAD] = GuiButton(
+                (Rectangle){
+                    (float)(GetScreenWidth()-10)/2, 
+                    (float)(GetScreenHeight()*(4.0/5.0)+10), 
+                    (float)((box_width+10)/2.0), 
+                    (float)(DIALOG_TEXT_SIZE+10)
+                    }, 
+            "Load");
+
+            auto descriptions = database.getConfigDescriptions();
+            int row_offset = 0;
+
+            for (auto item : descriptions) {
+                if (
+                    GuiButton(
+                (Rectangle){
+                    (float)(GetScreenWidth()-box_width)/2, 
+                    (float)(GetScreenHeight()*(1.0/5.0) + BUTTON_HEIGHT*row_offset), 
+                    (float)((box_width)-120),
+                    (float)(DIALOG_TEXT_SIZE+10)
+                    }, 
+                (((item.first == selected_profile_id) ? "(x)" : "( )") + item.second).c_str())
+                ) {
+                    selected_profile_id = item.first;
+                }
+                if (
+                    GuiButton(
+                (Rectangle){
+                    (float)((GetScreenWidth()+box_width)/2)-120, 
+                    (float)(GetScreenHeight()*(1.0/5.0) + BUTTON_HEIGHT*row_offset), 
+                    (float)(120),
+                    (float)(DIALOG_TEXT_SIZE+10)
+                    }, 
+                "Delete? (!)")
+                ) {
+                    database.removeConfig(item.first);
+                    database.commit();
+                }
+                row_offset++;
+            }
+        }
     }
 
     // Draw coordinates text next to cursor
@@ -438,11 +518,80 @@ void HFractalGui::saveImage() {
 }
 
 void HFractalGui::showSaveStateDialog() {
-    assert (false);
+    if (is_rendering) return;
+    modal_view_state = MODAL_VIEW_STATE::MVS_DATABASE_SAVE_DIALOG;
 }
 
 void HFractalGui::showLoadStateDialog() {
-    assert (false);
+    if (is_rendering) return;
+    modal_view_state = MODAL_VIEW_STATE::MVS_DATABASE_LOAD_DIALOG;
+}
+
+void HFractalGui::saveStateToDatabase() {
+    HFractalConfigProfile *cp = new HFractalConfigProfile();
+    cp->equation = hm->getEquation();
+    cp->iterations = hm->getEvalLimit();
+    cp->name = save_name_buffer;
+    cp->palette = selected_palette;
+    cp->x_offset = hm->getOffsetX();
+    cp->y_offset = hm->getOffsetY();
+    cp->zoom = hm->getZoom();
+    
+    HFractalUserProfile *default_user = database.getUser(0);
+    if (default_user == NULL) {
+        default_user = new HFractalUserProfile();
+        default_user->user_name = "default";
+        database.insertUser (default_user);
+    }
+
+    cp->user_id = default_user->user_id;
+
+    database.insertConfig(cp);
+    database.commit();
+    console_text = "Profile saved to database!";
+    closeDatabaseDialog();
+}
+
+void HFractalGui::loadStateFromDatabase() {
+    HFractalConfigProfile *cp = database.getConfig (selected_profile_id);
+    if (cp == NULL) {
+        console_text = "No profile selected to load.";
+    } else {
+        hm->setEquation(cp->equation);
+        lowres_hm->setEquation(cp->equation);
+
+        hm->setEvalLimit(cp->iterations);
+        lowres_hm->setEvalLimit(cp->iterations);
+
+        hm->setOffsetX(cp->x_offset);
+        lowres_hm->setOffsetX(cp->x_offset);
+
+        hm->setOffsetY(cp->y_offset);
+        lowres_hm->setOffsetY(cp->y_offset);
+        
+        hm->setZoom(cp->zoom);
+        lowres_hm->setZoom(cp->zoom);
+
+        selected_palette = (CP_PRESETS)cp->palette;
+        save_name_buffer = cp->name;
+
+        updatePreviewRender();
+        console_text = "Profile '" + save_name_buffer + "' loaded from database.";
+    }
+    closeDatabaseDialog();
+}
+
+void HFractalGui::closeDatabaseDialog() {
+    modal_view_state = MODAL_VIEW_STATE::MVS_NORMAL;
+}
+
+void HFractalGui::databaseLoadScrollDown() {
+    database_load_dialog_scroll++;
+}
+
+void HFractalGui::databaseLoadScrollUp() {
+    database_load_dialog_scroll--;
+    if (database_load_dialog_scroll < 0) database_load_dialog_scroll = 0;
 }
 
 void HFractalGui::moveUp() {
@@ -526,8 +675,17 @@ bool HFractalGui::handleButtonPresses() {
         if (button_states[BUTTON_ID::BUTTON_ID_EVAL_LIM_LESS]) { evalLimitLess(); return true; }
         if (button_states[BUTTON_ID::BUTTON_ID_EVAL_LIM_MORE]) { evalLimitMore(); return true; }
         if (button_states[BUTTON_ID::BUTTON_ID_HELP]) { showHelp(); return true; }
-        if (button_states[BUTTON_ID::BUTTON_ID_EQ_INPUTBOX]) { is_textbox_focussed = true; return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_EQ_INPUTBOX]) { textbox_focus = TEXT_FOCUS_STATE::TFS_EQUATION; return true; }
         if (button_states[BUTTON_ID::BUTTON_ID_CP_PRESETS]) { enterColourPalettePresetDialog(); return true; }
+    } else if (modal_view_state == MODAL_VIEW_STATE::MVS_DATABASE_SAVE_DIALOG) {
+        if (button_states[BUTTON_ID::BUTTON_ID_SAVE_NAME_INPUTBOX]) { textbox_focus = TEXT_FOCUS_STATE::TFS_SAVE_NAME; return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_SAVE]) { saveStateToDatabase(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_DATABASE_CANCEL]) { closeDatabaseDialog(); return true; }
+    } else if (modal_view_state == MODAL_VIEW_STATE::MVS_DATABASE_LOAD_DIALOG) {
+        if (button_states[BUTTON_ID::BUTTON_ID_LOAD]) { loadStateFromDatabase(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_SCROLL_DOWN]) { databaseLoadScrollDown(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_SCROLL_UP]) { databaseLoadScrollUp(); return true; }
+        if (button_states[BUTTON_ID::BUTTON_ID_DATABASE_CANCEL]) { closeDatabaseDialog(); return true; }
     }
 
     return false;
@@ -548,15 +706,15 @@ void HFractalGui::tryUnloadTexture() {
 }
 
 bool HFractalGui::handleKeyPresses() {
-    if (IsKeyDown(KEY_ESCAPE)) { is_textbox_focussed = false; return true; }
-    if (!is_textbox_focussed) {
+    if (IsKeyDown(KEY_ESCAPE)) { textbox_focus = TEXT_FOCUS_STATE::TFS_NONE; return true; }
+    if (textbox_focus == TEXT_FOCUS_STATE::TFS_NONE) {
         for (auto key : key_map) {
             if (IsKeyDown (key.first)) {
                 button_states[key.second] = true;
                 return true;
             }
         }
-    } else {
+    } else if (textbox_focus == TEXT_FOCUS_STATE::TFS_EQUATION) {
         if (IsKeyDown(KEY_ENTER)) { button_states[BUTTON_ID::BUTTON_ID_RENDER] = true; return true; }
         int key = GetCharPressed();
         if ((((int)'a' <= key && key <= (int)'c') || ((int)'x' <= key && key <= (int)'z') || key == 122 || (key >= 48 && key <= 57) || key == 94 || (key >= 40 && key <= 43) || key == 45 || key == 46 || key == 47 || key == 'i') && !is_rendering) {
@@ -572,6 +730,13 @@ bool HFractalGui::handleKeyPresses() {
             if (!hm->isValidEquation()) console_text = "Invalid equation input";
             else parametersWereModified();
         }
+    } else if (textbox_focus == TEXT_FOCUS_STATE::TFS_SAVE_NAME) {
+        int key = GetCharPressed();
+        if (((int)'a' <= key && key <= (int)'z') || ((int)'A' <= key && key <= (int)'Z')) {
+            save_name_buffer += (char)key;
+        } else if (GetKeyPressed() == KEY_BACKSPACE) {
+            if (save_name_buffer.length() > 0) save_name_buffer.pop_back();
+        }
     }
     return false;
 }
@@ -583,11 +748,11 @@ int HFractalGui::guiMain() {
         checkWindowResize();
         if (!is_rendering && modal_view_state == MVS_NORMAL) {
             bool click_handled = handleClickNavigation();
-            if (click_handled) { is_textbox_focussed = false; }
+            if (click_handled) { textbox_focus = TEXT_FOCUS_STATE::TFS_NONE; }
         }
         handleKeyPresses();
         bool button_pressed = handleButtonPresses();
-        if (button_pressed && !button_states[BUTTON_ID::BUTTON_ID_EQ_INPUTBOX]) { is_textbox_focussed = false; }
+        if (button_pressed && !button_states[BUTTON_ID::BUTTON_ID_EQ_INPUTBOX] && !button_states[BUTTON_ID::BUTTON_ID_SAVE_NAME_INPUTBOX]) { textbox_focus = TEXT_FOCUS_STATE::TFS_NONE; }
         clearButtonStates();
         if (is_rendering) updateFullRender();
         drawInterface();

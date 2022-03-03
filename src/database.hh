@@ -16,7 +16,6 @@ struct HFractalConfigProfile {
     int iterations;
     std::string equation;
     std::string name;
-    std::string preview_file_address;
     int palette;
     long user_id; // Foreign key of HFractalUserProfile
 

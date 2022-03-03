@@ -3,6 +3,7 @@
 
 #include "hyperfractal.hh"
 #include "utils.hh"
+#include "database.hh"
 #include <map>
 
 #define RAYGUI_IMPLEMENTATION
@@ -17,7 +18,7 @@
 #define WINDOW_INIT_HEIGHT 550      //                - height
 #define BUTTON_HEIGHT 30            // Height of a single button in the interface
 #define ELEMENT_NUM_VERTICAL 15     // Number of vertical elements
-#define BUTTON_NUM_TOTAL 19         // Total number of buttons in the interface
+#define BUTTON_NUM_TOTAL 25         // Total number of buttons in the interface
 #define CONTROL_MIN_WIDTH 400       // Minimum width of the control panel
 #define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL
 #define DIALOG_TEXT_SIZE 25
@@ -42,15 +43,28 @@ enum BUTTON_ID {
     BUTTON_ID_HELP,
     BUTTON_ID_TEXT_DIALOG_CLOSE,
     BUTTON_ID_EQ_INPUTBOX,
-    BUTTON_ID_CP_PRESETS
+    BUTTON_ID_CP_PRESETS,
+    BUTTON_ID_SAVE_NAME_INPUTBOX,
+    BUTTON_ID_SAVE,
+    BUTTON_ID_LOAD,
+    BUTTON_ID_SCROLL_DOWN,
+    BUTTON_ID_SCROLL_UP,
+    BUTTON_ID_DATABASE_CANCEL
 };
 
 enum MODAL_VIEW_STATE {
     MVS_NORMAL,
     MVS_TEXT_DIALOG,
-    MVS_DATABASE_DIALOG,
+    MVS_DATABASE_SAVE_DIALOG,
+    MVS_DATABASE_LOAD_DIALOG,
     MVS_EQUATION_PRESET_SELECTOR,
     MVS_COLOUR_PRESET_SELECTOR
+};
+
+enum TEXT_FOCUS_STATE {
+    TFS_NONE,
+    TFS_EQUATION,
+    TFS_SAVE_NAME
 };
 
 class HFractalGui {
@@ -73,18 +87,22 @@ private:
     std::string dialog_text;
     std::string console_text;
     std::string equation_buffer;
+    std::string save_name_buffer;
     bool button_states[BUTTON_NUM_TOTAL];
     Image buffer_image;
     Texture2D buffer_texture;
     bool is_rendering;
     bool is_outdated_render;
-    bool is_textbox_focussed;
+    TEXT_FOCUS_STATE textbox_focus;
     int render_percentage;
     bool showing_coordinates;
     MODAL_VIEW_STATE modal_view_state;
     int image_dimension;
     int control_panel_width;
     CP_PRESETS selected_palette;
+    HFractalDatabase database = HFractalDatabase ("FractalSavedStates.csv");
+    long selected_profile_id;
+    int database_load_dialog_scroll;
 
     void configureStyling();
     void configureGUI();
@@ -115,9 +133,6 @@ private:
     void resetZoom();
     void saveImage();
 
-    void showSaveStateDialog();
-    void showLoadStateDialog();
-
     void moveUp();
     void moveLeft();
     void moveRight();
@@ -133,6 +148,14 @@ private:
 
     void tryUnloadImage();
     void tryUnloadTexture();
+
+    void showSaveStateDialog();
+    void showLoadStateDialog();
+    void saveStateToDatabase();
+    void loadStateFromDatabase();
+    void closeDatabaseDialog();
+    void databaseLoadScrollDown();
+    void databaseLoadScrollUp();
 public:
     int guiMain();
 

@@ -88,10 +88,38 @@ std::vector<std::pair<long, std::string>> HFractalDatabase::getConfigDescription
     for (auto conf : configs) {
         std::pair<long, std::string> desc_pair;
         desc_pair.first = conf.first;
-        desc_pair.second = conf.second->name + " (" + conf.second->equation + ")";
+        desc_pair.second = (
+            conf.second->name
+            + " ("
+            + conf.second->equation
+            + ")");
         ret_val.push_back (desc_pair);
     }
     return ret_val;
+}
+
+/**
+ * @brief Function to get a configuration profile by its ID
+ * 
+ * @param id The ID of the profile
+ * @return A pointer to the configuration profile
+ */
+HFractalConfigProfile* HFractalDatabase::getConfig (long id) {
+    HFractalConfigProfile *ret = NULL;
+    if (configs.count(id) != 0) ret = configs[id];
+    return ret;
+}
+
+/**
+ * @brief Function to get a user profile by its ID
+ * 
+ * @param id The ID of the profile
+ * @return A pointer to the user profile
+ */
+HFractalUserProfile* HFractalDatabase::getUser (long id) {
+    HFractalUserProfile *ret = NULL;
+    if (users.count(id) != 0) ret = users[id];
+    return ret;
 }
 
 /**
@@ -171,7 +199,6 @@ bool HFractalDatabase::commit () {
             line += forCSV (config->iterations) + ",";
             line += forCSV (config->equation) + ",";
             line += forCSV (config->name) + ",";
-            line += forCSV (config->preview_file_address) + ",";
             line += forCSV (config->palette) + ",";
             line += forCSV (config->user_id);
             db_file_configs << line.c_str() << endl;
@@ -225,9 +252,8 @@ bool HFractalDatabase::read () {
                 config->iterations = stoi(components[4]);
                 config->equation = components[5];
                 config->name = components[6];
-                config->preview_file_address = components[7];
-                config->palette = stoi(components[8]);
-                config->user_id = stol(components[9]);
+                config->palette = stoi(components[7]);
+                config->user_id = stol(components[8]);
                 configs.emplace (config->profile_id, config);
             } catch (std::invalid_argument e) {
                 // Print a console error if a line could not be read
