@@ -1,15 +1,20 @@
 #include "gui.hh"
 #include "guimain.hh"
+
 #include <math.h>
 #include <algorithm>
-#include <iostream>
 #include <thread>
+
 #include "utils.hh"
 #include "database.hh"
-#include <cassert>
 
 using namespace std;
 
+/**
+ * @brief Automatically configure the styling for the GUI.
+ * Uses a stylesheet provided by raysan5, creator of the graphics library used in the project, raylib
+ * 
+ */
 void HFractalGui::configureStyling() {
     // This function implements the 'cyber' interface style provided by raygui's documentation.
     const char* stylesheet = R"(p 00 00 0x2f7486ff    DEFAULT_BORDER_COLOR_NORMAL
@@ -28,6 +33,7 @@ p 00 16 0x00000012    DEFAULT_TEXT_SIZE
 p 00 17 0x00000001    DEFAULT_TEXT_SPACING
 p 00 18 0x81c0d0ff    DEFAULT_LINE_COLOR
 p 00 19 0x00222bff    DEFAULT_BACKGROUND_COLOR)";
+    // Iterate over string and extract styling properties
     int offset = 0;
     int stylePointIndex = 0;
     string stylePointControl = "";
@@ -59,9 +65,14 @@ p 00 19 0x00222bff    DEFAULT_BACKGROUND_COLOR)";
         }
         offset++;
     }
+    // Tell raylib we've finished updating the styling
     GuiUpdateStyleComplete();
 }
 
+/**
+ * @brief Configure the GUI itself and all class properties
+ * 
+ */
 void HFractalGui::configureGUI() {
     // Basic class initialisation
     dialog_text = "";
@@ -95,7 +106,7 @@ void HFractalGui::configureGUI() {
     SetExitKey(-1);
     int min_height = std::max (256, CONTROL_MIN_HEIGHT);
     SetWindowMinSize(min_height+CONTROL_MIN_WIDTH, min_height);  
-    SetTargetFPS(30);
+    SetTargetFPS(24);
     configureStyling();
 
     // Initialise rendering environment
@@ -121,24 +132,41 @@ void HFractalGui::configureGUI() {
     lowres_hm->setOffsetY (start_y_offset);
 }
 
+/**
+ * @brief Called when a rendering parameter has been modified.
+ * Causes the rendered image to become 'out of date' and updates the preview render
+ * 
+ */
 void HFractalGui::parametersWereModified() {
     is_outdated_render = true;
     console_text = "Outdated render!";
     updatePreviewRender();
 }
 
+/**
+ * @brief Generate and show an updated image from the preview renderer
+ * 
+ * @return True if the update was successful, false if the equation was invalid
+ */
 bool HFractalGui::updatePreviewRender() {
+    // Check if the equation is valid
     if (!lowres_hm->isValidEquation()) return false;
-    lowres_hm->generateImage(true);
-    reloadImageFrom(lowres_hm);
+    lowres_hm->generateImage(true); // If it is, run a render
+    reloadImageFrom(lowres_hm); // And load it
     return true;
 }
 
+/**
+ * @brief Trigger a full resolution render to start
+ * 
+ * @return True if successful, false if the equation was invalid
+ */
 bool HFractalGui::startFullRender() {
-    if (!hm->isValidEquation()) {
+    if (!hm->isValidEquation()) { // Check if this is a valid equation
         console_text = "Invalid equation!";
         return false;
     }
+    // If it is, start the render
     is_rendering = true;
     console_text = "Rendering...";
     hm->generateImage(false);
@@ -147,10 +175,17 @@ bool HFractalGui::startFullRender() {
     return true;
 }
 
+/**
+ * @brief Check the status of the full resolution render, and produce an up-to-date display image showing the render progress.
+ * Also updates the completion percentage
+ * 
+ * @return True if the image has finished rendering, false otherwise
+ */
 bool HFractalGui::updateFullRender() {
     if (!is_rendering) return true;
+    // Update completion percentage
     render_percentage = round(hm->getImageCompletionPercentage());
-    if (hm->getIsRendering()) {
+    if (hm->getIsRendering()) { // If still rendering, update the rendered image and overlay it onto the preview
         is_outdated_render = true;
         Image overlay = getImage(hm);
         ImageDraw(&buffer_image, overlay, (Rectangle){0,0,(float)hm->getResolution(),(float)hm->getResolution()}, (Rectangle){0,0,(float)hm->getResolution(),(float)hm->getResolution()}, WHITE);
@@ -158,7 +193,7 @@ bool HFractalGui::updateFullRender() {
         tryUnloadTexture();
         buffer_texture = LoadTextureFromImage(buffer_image);
         return false;
-    } else {
+    } else { // Otherwise, set states to indicate completion and update the image
         is_outdated_render = false;
         is_rendering = false;
         reloadImageFrom (hm);
@@ -167,30 +202,45 @@ bool HFractalGui::updateFullRender() {
     }
 }
 
+/**
+ * @brief Reload the image and texture used for drawing to the screen from the specified render environment
+ * 
+ * @param h Rendering environment to grab the image from
+ */
 void HFractalGui::reloadImageFrom(HFractalMain* h) {
-    tryUnloadImage();
+    tryUnloadImage(); // Unload image and texture
     tryUnloadTexture();
     buffer_image = getImage(h);
-    if (buffer_image.height != image_dimension)
+    if (buffer_image.height != image_dimension) // Resize it to fill the frame
         ImageResize(&buffer_image, image_dimension, image_dimension);
     buffer_texture = LoadTextureFromImage(buffer_image);
 }
 
+/**
+ * @brief Check if the window has been resized, and handle it if so
+ * 
+ */
 void HFractalGui::checkWindowResize() {
-    if (is_rendering) {
+    if (is_rendering) { // If we're mid-render, snap back to previous window dimensions
         SetWindowSize(image_dimension+control_panel_width, image_dimension);
         return;
     }
-    if (IsWindowResized()) {
+    if (IsWindowResized()) { // Update render resolution and image dimension based on new size
         image_dimension = std::min(GetScreenWidth()-CONTROL_MIN_WIDTH, GetScreenHeight());
         control_panel_width = GetScreenWidth()-image_dimension;
         hm->setResolution(image_dimension);
-        parametersWereModified();
+        parametersWereModified(); // Notify that parameters have changed
     }
 }
 
+/**
+ * @brief Draw the entire interface
+ * 
+ */
 void HFractalGui::drawInterface() {
-    BeginDrawing();
+    BeginDrawing(); // Tell raylib we're about to start drawing
+
+    // Clear the background
     Color bg_col = GetColor (GuiGetStyle(00, BACKGROUND_COLOR));
     ClearBackground(bg_col);
 
@@ -258,6 +308,7 @@ void HFractalGui::drawInterface() {
         float preset_dialog_x = (float)image_dimension+(float)control_panel_width/2;
         float preset_dialog_y = BUTTON_HEIGHT*10.0f;
         for (int e = 0; e < NUM_EQUATION_PRESETS; e++) {
+            // Draw a button for each option
             if (
                 GuiButton((Rectangle){preset_dialog_x, preset_dialog_y+(BUTTON_HEIGHT*e), (float)control_panel_width/2, BUTTON_HEIGHT}, equationPreset((EQ_PRESETS)e, true).c_str())
             && !is_rendering
@@ -275,7 +326,7 @@ void HFractalGui::drawInterface() {
         float preset_dialog_x = (float)image_dimension;
         float preset_dialog_y = BUTTON_HEIGHT*13.0f;
         for (int c = 0; c < NUM_COLOUR_PRESETS; c++) {
-            cout << "a" << endl;
+            // Draw a button for each option
             if (
                 GuiButton((Rectangle){preset_dialog_x, preset_dialog_y+(BUTTON_HEIGHT*c), (float)control_panel_width, BUTTON_HEIGHT}, colourPalettePreset((CP_PRESETS)c).c_str())
             && !is_rendering
@@ -315,8 +366,8 @@ void HFractalGui::drawInterface() {
                 }, 
         "Cancel");
         
+        // Branch depending on whether the saving dialog or the loading dialog is open
         if (modal_view_state == MODAL_VIEW_STATE::MVS_DATABASE_SAVE_DIALOG) {
-            DrawRectangle((float)((GetScreenWidth()-box_width-20)/2.0), (float)(GetScreenHeight()*(1.0/5.0)-10), (float)(box_width+20), (float)(BUTTON_HEIGHT*2 + 180), GetColor(GuiGetStyle(0, BACKGROUND_COLOR)));
             button_states[BUTTON_ID::BUTTON_ID_SAVE] = GuiButton(
                 (Rectangle){
                     (float)(GetScreenWidth()-10)/2, 
@@ -345,34 +396,55 @@ void HFractalGui::drawInterface() {
                     }, 
             "Load");
 
+            button_states[BUTTON_ID::BUTTON_ID_SCROLL_UP] = GuiButton(
+                (Rectangle){
+                    (float)(GetScreenWidth()/2), 
+                    (float)(GetScreenHeight()*(1.0/5.0))+9*BUTTON_HEIGHT, 
+                    (float)120, 
+                    (float)(BUTTON_HEIGHT)
+                    }, 
+            "Scroll up");
+
+            button_states[BUTTON_ID::BUTTON_ID_SCROLL_DOWN] = GuiButton(
+                (Rectangle){
+                    (float)(GetScreenWidth()/2), 
+                    (float)(GetScreenHeight()*(1.0/5.0))+10*BUTTON_HEIGHT, 
+                    (float)120, 
+                    (float)(BUTTON_HEIGHT)
+                    }, 
+            "Scroll down");
+
             auto descriptions = database.getConfigDescriptions();
             int row_offset = 0;
 
             for (auto item : descriptions) {
-                if (
-                    GuiButton(
-                (Rectangle){
-                    (float)(GetScreenWidth()-box_width)/2, 
-                    (float)(GetScreenHeight()*(1.0/5.0) + BUTTON_HEIGHT*row_offset), 
-                    (float)((box_width)-120),
-                    (float)(DIALOG_TEXT_SIZE+10)
-                    }, 
-                (((item.first == selected_profile_id) ? "(x)" : "( )") + item.second).c_str())
-                ) {
-                    selected_profile_id = item.first;
-                }
-                if (
-                    GuiButton(
-                (Rectangle){
-                    (float)((GetScreenWidth()+box_width)/2)-120, 
-                    (float)(GetScreenHeight()*(1.0/5.0) + BUTTON_HEIGHT*row_offset), 
-                    (float)(120),
-                    (float)(DIALOG_TEXT_SIZE+10)
-                    }, 
-                "Delete? (!)")
-                ) {
-                    database.removeConfig(item.first);
-                    database.commit();
+                int draw_row = row_offset-database_load_dialog_scroll;
+                if (draw_row >= 0 && draw_row <= 8) {
+                    if (
+                        GuiButton(
+                    (Rectangle){
+                        (float)(GetScreenWidth()-box_width)/2, 
+                        (float)(GetScreenHeight()*(1.0/5.0) + BUTTON_HEIGHT*draw_row), 
+                        (float)((box_width)-120),
+                        (float)(BUTTON_HEIGHT)
+                        }, 
+                    (((item.first == selected_profile_id) ? "(x)" : "( )") + item.second).c_str())
+                    ) {
+                        selected_profile_id = item.first;
+                    }
+                    if (
+                        GuiButton(
+                    (Rectangle){
+                        (float)((GetScreenWidth()+box_width)/2)-120, 
+                        (float)(GetScreenHeight()*(1.0/5.0) + BUTTON_HEIGHT*draw_row), 
+                        (float)(120),
+                        (float)(BUTTON_HEIGHT)
+                        }, 
+                    "Delete? (!)")
+                    ) {
+                        database.removeConfig(item.first);
+                        database.commit();
+                    }
                 }
                 row_offset++;
             }
@@ -393,16 +465,22 @@ void HFractalGui::drawInterface() {
         DrawText (t, left+5, top, 15, BLACK);
     }
     
-    EndDrawing();
+    EndDrawing(); // Tell raylib we're done drawing
 }
 
+/**
+ * @brief Close the equation preset dialog, and switch to a given preset
+ * 
+ * @param e The equation preset to switch to, or -1 if the dialog was cancelled
+ */
 void HFractalGui::escapeEquationPresetDialog(int e) {
-    modal_view_state = MODAL_VIEW_STATE::MVS_NORMAL;
+    modal_view_state = MODAL_VIEW_STATE::MVS_NORMAL; // Switch back to normal mode
     if (is_rendering) return;
-    if (e != -1) {
+    if (e != -1) { // If an option was selected, make it the current equation and notify that parameters have changed
         equation_buffer = equationPreset ((EQ_PRESETS)e, false);
         hm->setEquation (equation_buffer);
         lowres_hm->setEquation (equation_buffer);
+        // Check whether the equation is valid
         if (!hm->isValidEquation()) console_text = "Invalid equation input";
         else {
             parametersWereModified();
@@ -410,20 +488,36 @@ void HFractalGui::escapeEquationPresetDialog(int e) {
     }
 }
 
+/**
+ * @brief Show the equation preset dialog
+ * 
+ */
 void HFractalGui::enterEquationPresetDialog() {
     if (is_rendering) return;
+    // Switch to equation preset selector mode
     modal_view_state = MODAL_VIEW_STATE::MVS_EQUATION_PRESET_SELECTOR;
 }
 
+/**
+ * @brief Show the colour palette preset dialog
+ * 
+ */
 void HFractalGui::enterColourPalettePresetDialog() {
     if (is_rendering) return;
+    // Switch to colour preset selector mode
     modal_view_state = MODAL_VIEW_STATE::MVS_COLOUR_PRESET_SELECTOR;
 }
 
+/**
+ * @brief Close the colour palette preset dialog and switch to a given palette
+ * 
+ * @param c Palette to switch to, or -1 if the dialog was cancelled
+ */
 void HFractalGui::escapeColourPalettePresetDialog(int c) {
-    modal_view_state = MODAL_VIEW_STATE::MVS_NORMAL;
+    modal_view_state = MODAL_VIEW_STATE::MVS_NORMAL; // Return to normal GUI mode
     if (is_rendering) return;
     if (c != -1) {
+        // If an option was selected, reload the image with the selected palette (no rerender necessarry)
         selected_palette = (CP_PRESETS)c;
         if (is_outdated_render) {
             reloadImageFrom(lowres_hm);
@@ -433,15 +527,20 @@ void HFractalGui::escapeColourPalettePresetDialog(int c) {
     }
 }
 
+/**
+ * @brief Get an image handleable by raylib from a given rendering environment
+ * 
+ * @param h Rendering environment to extract from
+ * @return A raylib-style image for drawing into the GUI
+ */
 Image HFractalGui::getImage(HFractalMain* h) {
+    // Fetch a 32 bit RGBA image in the selected colour palette
     int size = h->getResolution();
     uint32_t *data = h->getRGBAImage(selected_palette);
     Color *pixels = (Color *)malloc (size*size*sizeof(Color));
-    for (int i = 0; i < size*size; i++)
-        pixels[i] = (Color) {(unsigned char)((data[i] & 0xff000000) >> (8*3)),
-                             (unsigned char)((data[i] & 0x00ff0000) >> (8*2)),
-                             (unsigned char)((data[i] & 0x0000ff00) >> (8*1)),
-                             (unsigned char)(data[i] & 0x000000ff)};
+    // Convert the image data to a format raylib will accept
+    for (int i = 0; i < size*size; i++) pixels[i] = GetColor(data[i]);
+    // Construct a raylib image from the data
     Image img = {
         .data = pixels,
         .width = size,
@@ -452,14 +551,22 @@ Image HFractalGui::getImage(HFractalMain* h) {
     return img;
 }
 
+/**
+ * @brief Handle when the user clicks on the image.
+ * Automatically centres the area they clicked and notifies the GUI that rendering parameters have been modified, triggering a preview update
+ * 
+ * @return True if a click was handled, otherwise false
+ */
 bool HFractalGui::handleClickNavigation() {
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && !is_rendering) {
         Vector2 mpos = GetMousePosition();
+        // Check if the mouse click was inside the image
         if (mpos.x <= image_dimension && mpos.y <= image_dimension) {
             long double change_in_x = (long double)((mpos.x / (image_dimension / 2)) - 1) / hm->getZoom();
             long double change_in_y = (long double)((mpos.y / (image_dimension / 2)) - 1) / hm->getZoom();
             long double new_offset_x = hm->getOffsetX() + change_in_x;
             long double new_offset_y = hm->getOffsetY() - change_in_y;
+            // Update parameters and notify of the modification
             lowres_hm->setOffsetX(new_offset_x);
             lowres_hm->setOffsetY(new_offset_y);
             hm->setOffsetX(new_offset_x);
@@ -471,25 +578,42 @@ bool HFractalGui::handleClickNavigation() {
     return false;
 }
 
+/**
+ * @brief Show a text dialog with a given string as text
+ * 
+ * @param text Text to display
+ */
 void HFractalGui::launchTextDialog(std::string text) {
     modal_view_state = MODAL_VIEW_STATE::MVS_TEXT_DIALOG;
     dialog_text = text;
 }
 
+/**
+ * @brief Close the currently open text dialog and go back to normal GUI mode
+ * 
+ */
 void HFractalGui::closeTextDialog() {
     modal_view_state = MODAL_VIEW_STATE::MVS_NORMAL;
     dialog_text = "";
 }
 
+/**
+ * @brief Handler for Zoom In button
+ * 
+ */
 void HFractalGui::zoomIn() {
-    if (hm->getZoom() <= SCALE_DEPTH_LIMIT) {
+    if (hm->getZoom() <= SCALE_DEPTH_LIMIT) { // Check the zoom has not exceeded the depth limit 
         long double new_zoom = hm->getZoom() * SCALE_STEP_FACTOR;
         lowres_hm->setZoom (new_zoom);
         hm->setZoom (new_zoom);
         parametersWereModified();
-    } else launchTextDialog ("Zoom precision limit reached");
+    } else launchTextDialog ("Zoom precision limit reached"); // Present a text dialog to report the issue to the user
 }
 
+/**
+ * @brief Handler for Zoom Out button
+ * 
+ */
 void HFractalGui::zoomOut() {
     long double new_zoom = hm->getZoom() / SCALE_STEP_FACTOR;
     lowres_hm->setZoom (new_zoom);
@@ -497,14 +621,23 @@ void HFractalGui::zoomOut() {
     parametersWereModified();
 }
 
+/**
+ * @brief Handler for Reset Zoom button
+ * 
+ */
 void HFractalGui::resetZoom() {
     lowres_hm->setZoom(1);
     hm->setZoom(1);
     parametersWereModified();
 }
 
+/**
+ * @brief Handler for Save Image button
+ * 
+ */
 void HFractalGui::saveImage() {
     bool result = false;
+    // Switch depending on whether there is a full render available to save
     if (is_outdated_render) {
         result = lowres_hm->autoWriteImage(IMAGE_TYPE::PGM);
         console_text = "Saved preview render to desktop.";
@@ -517,17 +650,31 @@ void HFractalGui::saveImage() {
     }
 }
 
+/**
+ * @brief Make the save render state dialog visible
+ * 
+ */
 void HFractalGui::showSaveStateDialog() {
     if (is_rendering) return;
     modal_view_state = MODAL_VIEW_STATE::MVS_DATABASE_SAVE_DIALOG;
 }
 
+/**
+ * @brief Make the load render state dialog visible
+ * 
+ */
 void HFractalGui::showLoadStateDialog() {
     if (is_rendering) return;
     modal_view_state = MODAL_VIEW_STATE::MVS_DATABASE_LOAD_DIALOG;
+    database_load_dialog_scroll = 0;
 }
 
+/**
+ * @brief Save the current render state to the database and close the dialog
+ * 
+ */
 void HFractalGui::saveStateToDatabase() {
+    // Create the new config profile and populate its fields
     HFractalConfigProfile *cp = new HFractalConfigProfile();
     cp->equation = hm->getEquation();
     cp->iterations = hm->getEvalLimit();
@@ -537,6 +684,7 @@ void HFractalGui::saveStateToDatabase() {
     cp->y_offset = hm->getOffsetY();
     cp->zoom = hm->getZoom();
     
+    // Fetch or create the default user if necessarry
     HFractalUserProfile *default_user = database.getUser(0);
     if (default_user == NULL) {
         default_user = new HFractalUserProfile();
@@ -546,17 +694,23 @@ void HFractalGui::saveStateToDatabase() {
 
     cp->user_id = default_user->user_id;
 
+    // Insert the new profile into the database
     database.insertConfig(cp);
     database.commit();
     console_text = "Profile saved to database!";
-    closeDatabaseDialog();
+    closeDatabaseDialog(); // Escape from the dialog
 }
 
+/**
+ * @brief Load the selected render state from the database and close the dialog
+ * 
+ */
 void HFractalGui::loadStateFromDatabase() {
+    // Try to fetch the config profile
     HFractalConfigProfile *cp = database.getConfig (selected_profile_id);
     if (cp == NULL) {
         console_text = "No profile selected to load.";
-    } else {
+    } else { // On success, load all properties into the rendering environments
         hm->setEquation(cp->equation);
         lowres_hm->setEquation(cp->equation);
 
@@ -578,22 +732,38 @@ void HFractalGui::loadStateFromDatabase() {
         updatePreviewRender();
         console_text = "Profile '" + save_name_buffer + "' loaded from database.";
     }
-    closeDatabaseDialog();
+    closeDatabaseDialog(); // Close the dialog
 }
 
+/**
+ * @brief Hide the database dialog and return to normal GUI mode
+ * 
+ */
 void HFractalGui::closeDatabaseDialog() {
     modal_view_state = MODAL_VIEW_STATE::MVS_NORMAL;
 }
 
+/**
+ * @brief Scroll down inside the load render state dialog
+ * 
+ */
 void HFractalGui::databaseLoadScrollDown() {
     database_load_dialog_scroll++;
 }
 
+/**
+ * @brief Scroll up inside the load render state dialog
+ * 
+ */
 void HFractalGui::databaseLoadScrollUp() {
     database_load_dialog_scroll--;
     if (database_load_dialog_scroll < 0) database_load_dialog_scroll = 0;
 }
 
+/**
+ * @brief Handler for Move Up button
+ * 
+ */
 void HFractalGui::moveUp() {
     long double new_offset = hm->getOffsetY() + (MOVE_STEP_FACTOR/hm->getZoom());
     hm->setOffsetY (new_offset);
@@ -601,6 +771,10 @@ void HFractalGui::moveUp() {
     parametersWereModified();
 }
 
+/**
+ * @brief Handler for Move Left button
+ * 
+ */
 void HFractalGui::moveLeft() {
     long double new_offset = hm->getOffsetX() - (MOVE_STEP_FACTOR/hm->getZoom());
     hm->setOffsetX (new_offset);
@@ -608,6 +782,10 @@ void HFractalGui::moveLeft() {
     parametersWereModified();
 }
 
+/**
+ * @brief Handler for Move Right button
+ * 
+ */
 void HFractalGui::moveRight() {
     long double new_offset = hm->getOffsetX() + (MOVE_STEP_FACTOR/hm->getZoom());
     hm->setOffsetX (new_offset);
@@ -615,6 +793,10 @@ void HFractalGui::moveRight() {
     parametersWereModified();
 }
 
+/**
+ * @brief Handler for Move Down button
+ * 
+ */
 void HFractalGui::moveDown() {
     long double new_offset = hm->getOffsetY() - (MOVE_STEP_FACTOR/hm->getZoom());
     hm->setOffsetY (new_offset);
@@ -622,12 +804,21 @@ void HFractalGui::moveDown() {
     parametersWereModified();
 }
 
+/**
+ * @brief Handler for Show/Hide Coordinates button
+ * 
+ */
 void HFractalGui::toggleCoords() {
     showing_coordinates = !showing_coordinates;
 }
 
+/**
+ * @brief Handlder for '<' button
+ * 
+ */
 void HFractalGui::evalLimitLess() {
     int new_el = hm->getEvalLimit();
+    // Allow faster jumping if shift is held
     if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
         new_el -= 10;
     } else {
@@ -638,8 +829,13 @@ void HFractalGui::evalLimitLess() {
     parametersWereModified();
 }
 
+/**
+ * @brief Handler for '>' button
+ * 
+ */
 void HFractalGui::evalLimitMore() {
     int new_el = hm->getEvalLimit();
+    // Allow faster jumping if shift is held
     if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown (KEY_RIGHT_SHIFT)) {
         new_el += 10;
     } else {
@@ -650,12 +846,27 @@ void HFractalGui::evalLimitMore() {
     parametersWereModified();
 }
 
+/**
+ * @brief Handler for Help & Instructions button
+ * 
+ */
 void HFractalGui::showHelp() {
-    system ("open https://github.com/JkyProgrammer/HyperFractal/blob/main/README.md");
+    // Open the help page in the repository, cross-platform
+    #ifdef _WIN32
+        system("explorer https://github.com/JkyProgrammer/HyperFractal/blob/main/README.md#help--instructions");
+    #else
+        system("open https://github.com/JkyProgrammer/HyperFractal/blob/main/README.md#help--instructions");
+    #endif
 }
 
+/**
+ * @brief Handle the user pressing a GUI button
+ * 
+ * @return True if a button press was handled, otherwise false
+ */
 bool HFractalGui::handleButtonPresses() {
     if (is_rendering) return false;
+    // Branch to different handling modes depending on the dialog state, allowing certain sets of buttons to be disabled when dialogs are open
     if (modal_view_state == MODAL_VIEW_STATE::MVS_TEXT_DIALOG) {
         if (button_states[BUTTON_ID::BUTTON_ID_TEXT_DIALOG_CLOSE]) { closeTextDialog(); return true; }
     } else if (modal_view_state == MODAL_VIEW_STATE::MVS_NORMAL) {
@@ -691,22 +902,42 @@ bool HFractalGui::handleButtonPresses() {
     return false;
 }
 
+/**
+ * @brief Clear the contents of the button states array to prevent unhandled button presses hanging over to the next update
+ * 
+ */
 void HFractalGui::clearButtonStates() {
     for (int i = 0; i < BUTTON_NUM_TOTAL; i++) {
         button_states[i] = false;
     }
 }
 
+/**
+ * @brief Unload the image buffer to prevent memory leaks
+ * 
+ */
 void HFractalGui::tryUnloadImage() {
     UnloadImage (buffer_image);
 }
 
+/**
+ * @brief Unload the texture buffer to prevent memory leaks
+ * 
+ */
 void HFractalGui::tryUnloadTexture() {
     UnloadTexture (buffer_texture);
 }
 
+/**
+ * @brief Handle when the user presses a key
+ * 
+ * @return True if a key press was handled, false otherwise 
+ */
 bool HFractalGui::handleKeyPresses() {
+    // Escape currently editing text box when escape is pressed
     if (IsKeyDown(KEY_ESCAPE)) { textbox_focus = TEXT_FOCUS_STATE::TFS_NONE; return true; }
+
+    // Handle keys depending on which text box is focussed (if none, use them for navigation)
     if (textbox_focus == TEXT_FOCUS_STATE::TFS_NONE) {
         for (auto key : key_map) {
             if (IsKeyDown (key.first)) {
@@ -741,33 +972,54 @@ bool HFractalGui::handleKeyPresses() {
     return false;
 }
 
+/**
+ * @brief Start the GUI and run the mainloop.
+ * Blocks on current thread
+ * 
+ * @return Integer showing exit status 
+ */
 int HFractalGui::guiMain() {
+    // Run the setup code
     configureGUI();
     parametersWereModified();
-    while(!WindowShouldClose()) {
+    while(!WindowShouldClose()) { // Loop until the application closes
         checkWindowResize();
         if (!is_rendering && modal_view_state == MVS_NORMAL) {
             bool click_handled = handleClickNavigation();
+            // Defocus the textbox if a click is handled somewhere
             if (click_handled) { textbox_focus = TEXT_FOCUS_STATE::TFS_NONE; }
         }
         handleKeyPresses();
         bool button_pressed = handleButtonPresses();
+        // Defocus the textbox if a button press is handled
         if (button_pressed && !button_states[BUTTON_ID::BUTTON_ID_EQ_INPUTBOX] && !button_states[BUTTON_ID::BUTTON_ID_SAVE_NAME_INPUTBOX]) { textbox_focus = TEXT_FOCUS_STATE::TFS_NONE; }
         clearButtonStates();
+        // If a render is in progress, update the status of it
         if (is_rendering) updateFullRender();
+        // Finally, draw everything
         drawInterface();
     }
+    
+    // Release resources and close
     tryUnloadImage();
     tryUnloadTexture();
     CloseWindow();
     return 0;
 }
 
+/**
+ * @brief Construct a new GUI object
+ * 
+ */
 HFractalGui::HFractalGui() {}
 
+/**
+ * @brief Method to start the GUI, isolates the GUI module from the main module to prevent linker conflicts with raylib
+ * 
+ * @return Integer showing exit status 
+ */
 int guiMain () {
     HFractalGui gui = HFractalGui ();
     int res = gui.guiMain();
     return res;
 }
-

@@ -31,8 +31,17 @@ By clicking on the 'Render Image' button in the control panel, the application w
 Parameters determine the image which is output. These include the following:
 * Zoom - allows you to look closer at particular areas by stretching the mathematical space on both axes - can be altered using the 'Zoom In', 'Reset Zoom', 'Zoom Out' buttons
 * Offset - allows you to move the viewport around the fractal by offsetting the mathematical space on one or more axes - can be altered using the 'up', 'down' 'left', 'right' buttons, or the arrow keys
-* Equation - the iterative mathematical expression which is used to generate values for each pixel - typing allows you to alter this: **see dedicated help section**
+* Equation - the iterative mathematical expression which is used to generate values for each pixel - clicking in the equation input box and typing allows you to alter this: **see dedicated help section**
 * Iteration limit - limits the number of times the equation is iterated before the program assumes it does not tend to infinity - can be altered using the '<' and '>' buttons, or using the left and right square bracket keys (accelerate by holding Shift)
+* Palette - can be selected from presets using the 'Colour Palettes' button
+
+### Saving and Loading Render States
+
+The application allows you to load or save render states. A render state is a configuration profile containing all the rendering parameters used, including zoom, offsets, iteration limit, palette, etc.
+
+In order to save a render state, click the 'Save Render State' button, click the input box in the middle of the screen, enter a descriptive name, and press 'Save'.
+
+To load a render state, click the 'Load Render State' button, select an available saved profile from the list, and click 'Load'. This will overwrite current settings, so if you have a nice configuration currently showing, make sure to save it first before loading another. The loading dialog also gives you the option to delete saved profiles if you want, but be careful because this is permanent.
 
 ### Equations
 

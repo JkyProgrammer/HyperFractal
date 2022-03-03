@@ -1,15 +1,16 @@
 #ifndef GUI_H
 #define GUI_H
 
-#include "hyperfractal.hh"
-#include "utils.hh"
-#include "database.hh"
 #include <map>
 
 #define RAYGUI_IMPLEMENTATION
 #define RAYGUI_SUPPORT_ICONS
 #include "../lib/raygui.h"
 #include "../lib/ricons.h"
+
+#include "hyperfractal.hh"
+#include "utils.hh"
+#include "database.hh"
 
 #define SCALE_STEP_FACTOR 1.5       // Factor by which scaling changes
 #define SCALE_DEPTH_LIMIT 1.0e15    // Limit to prevent user from going too deep due to limited precision
@@ -20,10 +21,10 @@
 #define ELEMENT_NUM_VERTICAL 15     // Number of vertical elements
 #define BUTTON_NUM_TOTAL 25         // Total number of buttons in the interface
 #define CONTROL_MIN_WIDTH 400       // Minimum width of the control panel
-#define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL
-#define DIALOG_TEXT_SIZE 25
-#define HELP_TEXT_SIZE 15
+#define CONTROL_MIN_HEIGHT BUTTON_HEIGHT*ELEMENT_NUM_VERTICAL // Minimum height of the panel
+#define DIALOG_TEXT_SIZE 25         // Size of text in dialog windows
 
+// Enum listing button IDs to abstract and make code clearer
 enum BUTTON_ID {
     BUTTON_ID_RENDER = 0,
     BUTTON_ID_ZOOM_IN,
@@ -52,6 +53,7 @@ enum BUTTON_ID {
     BUTTON_ID_DATABASE_CANCEL
 };
 
+// Enum listing GUI states for cases when a dialog or modal is open (i.e. to disable certain interface elements)
 enum MODAL_VIEW_STATE {
     MVS_NORMAL,
     MVS_TEXT_DIALOG,
@@ -61,14 +63,17 @@ enum MODAL_VIEW_STATE {
     MVS_COLOUR_PRESET_SELECTOR
 };
 
+// Enum listing text focus states to enable/disable input to specific fields
 enum TEXT_FOCUS_STATE {
     TFS_NONE,
     TFS_EQUATION,
     TFS_SAVE_NAME
 };
 
+// Class managing the GUI environment
 class HFractalGui {
 private:
+    // Lists which keys on the keyboard map to which interface buttons
     std::map<KeyboardKey, BUTTON_ID> key_map = {
         {KEY_ENTER, BUTTON_ID::BUTTON_ID_RENDER},
         {KEY_EQUAL, BUTTON_ID::BUTTON_ID_ZOOM_IN},
@@ -81,84 +86,86 @@ private:
         {KEY_RIGHT_BRACKET, BUTTON_ID::BUTTON_ID_EVAL_LIM_MORE}
     };
 
-    HFractalMain* lowres_hm;
-    HFractalMain* hm;
+    HFractalMain* hm; // Pointer to main rendering environment
+    HFractalMain* lowres_hm; // Pointer to an identical rendering environment, but with a lower resolution for preview renders
 
-    std::string dialog_text;
-    std::string console_text;
-    std::string equation_buffer;
-    std::string save_name_buffer;
-    bool button_states[BUTTON_NUM_TOTAL];
-    Image buffer_image;
-    Texture2D buffer_texture;
-    bool is_rendering;
-    bool is_outdated_render;
-    TEXT_FOCUS_STATE textbox_focus;
-    int render_percentage;
-    bool showing_coordinates;
-    MODAL_VIEW_STATE modal_view_state;
-    int image_dimension;
-    int control_panel_width;
-    CP_PRESETS selected_palette;
-    HFractalDatabase database = HFractalDatabase ("FractalSavedStates.csv");
-    long selected_profile_id;
-    int database_load_dialog_scroll;
+    std::string dialog_text; // Text to show in the text dialog widget
+    std::string console_text; // Text to show in the application console
+    std::string equation_buffer; // Contains the equation being used by both renderer classes
+    std::string save_name_buffer; // Contains the text shown/edited in the name field in the save render state dialog
+    bool button_states[BUTTON_NUM_TOTAL]; // Contains the current states of every button in the GUI (true for pressed, false for not pressed)
+    Image buffer_image; // Image being used by raygui for displaying the render result
+    Texture2D buffer_texture; // Texture being used by raygui for displaying the render result
+    bool is_rendering; // Stores whether the GUI is currently waiting on a full-resolution render (and thus should freeze controls)
+    bool is_outdated_render; // Stores whether the GUI is showing a preview render (i.e. needs a full-resolution render to be run by the user)
+    TEXT_FOCUS_STATE textbox_focus; // Stores the currently focussed text box
+    int render_percentage; // Stores the percentage completion of the current render
+    bool showing_coordinates; // Stores whether coordinates are currently being shown on the mouse cursor
+    MODAL_VIEW_STATE modal_view_state; // Stores the current modal state of the GUI, allowing certain controls to be enabled and disabled in different modes
+    int image_dimension; // Stores the size of the image, used for sizing the window, scaling and rendering images, and positioning elements
+    int control_panel_width; // Stores the width of the control panel
+    CP_PRESETS selected_palette; // Determines the colour palette in which the GUI is currently displaying the rendered image
+    HFractalDatabase database = HFractalDatabase ("FractalSavedStates.csv"); // Database which manages saved profile states
+    long selected_profile_id; // Records the ID of the profile currently selected in the load render state dialog
+    int database_load_dialog_scroll; // Records the current amount of scroll in the load render state dialog
 
-    void configureStyling();
-    void configureGUI();
+    void configureStyling(); // Configures the GUI styling from a stylesheet provided by raylib's creator as part of the library
+    void configureGUI(); // Configures the GUI and initialises all class variables ready for the first GUI mainloop update
 
-    void parametersWereModified();
-    bool updatePreviewRender();
-    bool startFullRender();
-    bool updateFullRender();
-    void reloadImageFrom(HFractalMain*);
+    void parametersWereModified(); // Marks the GUI as using an outdated render and triggers a preview render update
+    bool updatePreviewRender(); // Rerenders the preview image
+    bool startFullRender(); // Triggers a full resolution render
+    bool updateFullRender(); // Updates the image and texture buffers from the partially-finished rendering environment image, and finalises if the render has completed
+    void reloadImageFrom(HFractalMain*); // Automatically fetch and reload the image and texture buffers from a given rendering environment
 
-    void checkWindowResize();
+    void checkWindowResize(); // Check to see if the window has been resized, and handle it
 
-    bool handleClickNavigation();
-    bool handleButtonPresses();
-    bool handleKeyPresses();
-    void drawInterface();
+    bool handleClickNavigation(); // Check to see if the user has clicked somewhere on the image, and jump to focus that location if so
+    bool handleButtonPresses(); // Handle any interface button presses the user has made since the last update
+    bool handleKeyPresses(); // Handle any keyboard key presses the user has made since the last update
+    void drawInterface(); // Draw the entire interface, called each update
 
-    Image getImage(HFractalMain*);
-    void escapeEquationPresetDialog(int);
-    void enterEquationPresetDialog();
-    void enterColourPalettePresetDialog();
-    void escapeColourPalettePresetDialog(int);
-    void launchTextDialog(std::string);
-    void closeTextDialog();
+    Image getImage(HFractalMain*); // Extract image data from a rendering environment
 
-    void zoomIn();
-    void zoomOut();
-    void resetZoom();
-    void saveImage();
+    void enterEquationPresetDialog(); // Show the equation preset selector and disable other GUI controls
+    void escapeEquationPresetDialog(int); // Close the equation preset selector and return to normal GUI mode
+    void enterColourPalettePresetDialog(); // Show the colour palette preset selector and disable other GUI controls
+    void escapeColourPalettePresetDialog(int); // Close the colour palette preset selector and return to normal GUI mode
+    void launchTextDialog(std::string); // Show a text dialog over the window with a given string as text
+    void closeTextDialog(); // Close the text dialog currently being shown
 
-    void moveUp();
-    void moveLeft();
-    void moveRight();
-    void moveDown();
+    void zoomIn(); // Handler for Zoom In button
+    void zoomOut(); // Handler for Zoom Out button
+    void resetZoom(); // Handler for Reset Zoom button
+    void saveImage(); // Handler for Save Image button
 
-    void toggleCoords();
+    void moveUp(); // Handler for Move Up button
+    void moveLeft(); // Handler for Move Left button
+    void moveRight(); // Handler for Move Right button
+    void moveDown(); // Handler for Move Down button
 
-    void evalLimitLess();
-    void evalLimitMore();
+    void toggleCoords(); // Handler for Show/Hide Coordinates button
 
-    void showHelp();
-    void clearButtonStates();
+    void evalLimitLess(); // Handler for '<' button
+    void evalLimitMore(); // Handler for '>' button
 
-    void tryUnloadImage();
-    void tryUnloadTexture();
+    void showHelp(); // Handler for Help & Instructions button
+    void clearButtonStates(); // Clears current button states to ignore unhandled button presses
 
-    void showSaveStateDialog();
-    void showLoadStateDialog();
-    void saveStateToDatabase();
-    void loadStateFromDatabase();
-    void closeDatabaseDialog();
-    void databaseLoadScrollDown();
-    void databaseLoadScrollUp();
+    void tryUnloadImage(); // Unload the image buffer, prevents memory leaks
+    void tryUnloadTexture(); // Unload the texture buffer, prevents memory leaks
+
+    void showSaveStateDialog(); // Make the save render state dialog visible
+    void showLoadStateDialog(); // Make the load render state dialog visible
+    void saveStateToDatabase(); // Save the current render state to the database
+    void loadStateFromDatabase(); // Load the selected config profile from the database to be the current render state
+    void closeDatabaseDialog(); // Hide the save/load render state dialog
+    void databaseLoadScrollDown(); // Scroll down in the load render state dialog
+    void databaseLoadScrollUp(); // Scroll up in the load render state dialog
 public:
-    int guiMain();
+    int guiMain(); // Start and run the entire GUI. Blocks on current thread
 
-    HFractalGui();
+    HFractalGui(); // Basic constructor
 };
+
 #endif

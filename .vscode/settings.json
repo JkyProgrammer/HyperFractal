@@ -120,7 +120,8 @@
         "source_location": "cpp",
         "rope": "cpp",
         "slist": "cpp",
-        "guiold": "c"
+        "guiold": "c",
+        "cassert": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled",
     "git.ignoreLimitWarning": true

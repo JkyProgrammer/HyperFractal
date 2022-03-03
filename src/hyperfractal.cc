@@ -150,7 +150,7 @@ uint32_t* HFractalMain::getRGBAImage (int colour_preset) {
     for (int x = 0; x < size; x++) {
         for (int y = 0; y < size; y++) {
             int v = img->get(x,y);
-            pixels[(y*size)+x] = (v == limit) ? HFractalImage::BLACK : HFractalImage::colourFromValue(v, colour_preset);
+            pixels[(y*size)+x] = (v == limit) ? 0x000000ff : HFractalImage::colourFromValue(v, colour_preset);
             
             // If the pixel has not been computed, make it transparent
             if (img->completed[(y*size)+x] != 2) pixels[(y*size)+x] = 0;
