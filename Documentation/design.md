@@ -43,6 +43,8 @@ There will also likely be a utilities module which contains miscellaneous functi
 
 ## Flow Diagram
 
+## Interface Block-out
+
 ## Algorithms & Data Structures
 
 ### Parsing A Mathematical Expression with Recursion
