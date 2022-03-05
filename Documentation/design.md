@@ -36,9 +36,9 @@ The final module will be the evaluator, which contains the code to handle and ev
 
 There will also likely be a utilities module which contains miscellaneous functions which multiple other modules might be using (such as a delay or wait procedure).
 
-## Class Digram
+## Class Diagram
 
-
+The class diagram is split over three pages due to its size. 
 
 
 ## Flow Diagram
