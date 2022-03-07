@@ -54,7 +54,23 @@ public:
     void setZoom (long double zoom_) { if (!getIsRendering()) zoom = zoom_; }
 
     std::string getEquation () { return eq; } // Inline methods to get/set the equation
-    void setEquation (std::string eq_) { if (!getIsRendering()) { eq = eq_; main_equation = HFractalEquationParser::extract_equation (eq); } }
+    void setEquation (std::string eq_) { 
+        if (!getIsRendering()) { 
+            eq = eq_;
+            main_equation = HFractalEquationParser::extract_equation (eq);
+            if (main_equation == NULL) return;
+            // Detect if the equation matches the blueprint of a preset
+            int preset = -1;
+            for (int i = 0; i < NUM_EQUATION_PRESETS; i++) {
+                if (eq == equationPreset ((EQ_PRESETS)i, false)) {
+                    preset = i;
+                    break;
+            main_equation->setPreset (preset);
+        }
+    }
+    main_equation->setPreset (preset);
+        }
+    }
 
     int getWorkerThreads () { return worker_threads; } // Inline methods to get/set the number of worker threads
     void setWorkerThreads (int wt_) { if (!getIsRendering()) worker_threads = wt_; }

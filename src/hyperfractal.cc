@@ -66,16 +66,6 @@ int HFractalMain::generateImage (bool wait=true) {
 
     // Abort rendering if the equation is invalid
     if (!isValidEquation()) { std::cout << "Aborting!" << std::endl; return 1; }
-
-    // Detect if the HFractalEquation matches the blueprint of a preset
-    int preset = -1;
-    for (int i = 0; i < NUM_EQUATION_PRESETS; i++) {
-        if (eq == equationPreset ((EQ_PRESETS)i, false)) {
-            preset = i;
-            break;
-        }
-    }
-    main_equation->setPreset (preset);
     
     // Mark the environment as now rendering, locking resources/parameters
     is_rendering = true;
