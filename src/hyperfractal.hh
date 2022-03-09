@@ -1,3 +1,5 @@
+// src/hyperfractal.hh
+
 #ifndef HYPERFRACTAL_H
 #define HYPERFRACTAL_H
 

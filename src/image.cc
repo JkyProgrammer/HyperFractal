@@ -1,3 +1,5 @@
+// src/image.cc
+
 #include "image.hh"
 
 #include <ostream>

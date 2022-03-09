@@ -1,3 +1,5 @@
+// src/guimain.hh
+
 #ifndef GUIMAIN_H
 #define GUIMAIN_H
 

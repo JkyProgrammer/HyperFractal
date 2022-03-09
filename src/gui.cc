@@ -1,3 +1,5 @@
+// src/gui.cc
+
 #include "gui.hh"
 #include "guimain.hh"
 

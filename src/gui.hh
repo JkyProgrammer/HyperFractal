@@ -1,3 +1,5 @@
+// src/gui.hh
+
 #ifndef GUI_H
 #define GUI_H
 

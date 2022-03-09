@@ -1,3 +1,5 @@
+// src/main.cc
+
 #include <iostream>
 
 #include "hyperfractal.hh"

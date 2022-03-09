@@ -1,3 +1,5 @@
+// src/equationparser.hh
+
 #ifndef EQUATIONPARSER_H
 #define EQUATIONPARSER_H
 
