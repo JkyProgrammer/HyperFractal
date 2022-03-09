@@ -394,7 +394,7 @@ void HFractalGui::drawInterface() {
                     (float)((box_width+10)/2.0), 
                     (float)(DIALOG_TEXT_SIZE+10)
                     }, 
-            "Load");
+            "Load (overwrites current config)");
 
             button_states[BUTTON_ID::BUTTON_ID_SCROLL_UP] = GuiButton(
                 (Rectangle){
