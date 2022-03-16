@@ -545,6 +545,7 @@ Image HFractalGui::getImage(HFractalMain* h) {
     Color *pixels = (Color *)malloc (size*size*sizeof(Color));
     // Convert the image data to a format raylib will accept
     for (int i = 0; i < size*size; i++) pixels[i] = GetColor(data[i]);
+    delete data;
     // Construct a raylib image from the data
     Image img = {
         .data = pixels,

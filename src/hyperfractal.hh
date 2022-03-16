@@ -14,7 +14,7 @@
 #include "equationparser.hh"
 
 // When defined, progress updates will be written to terminal.
-//#define TERMINAL_UPDATES
+#define TERMINAL_UPDATES
 
 // Class defining a fractal rendering environment, fully encapsulated
 class HFractalMain {

@@ -42,7 +42,7 @@ int main (int argc, char *argv[]) {
             if (hm.getEvalLimit() <= 0) throw runtime_error("Must use at least one evaluation iteration.");
             argument_error++;
             hm.generateImage(true);
-            return hm.autoWriteImage (IMAGE_TYPE::PGM);
+            return !hm.autoWriteImage (IMAGE_TYPE::PGM);
         } catch (runtime_error e) {
             cout << "Parameter error on argument number " << argument_error << ":" << endl;
             cout << "  " << e.what() << endl;
