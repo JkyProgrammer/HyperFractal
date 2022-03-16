@@ -77,7 +77,10 @@ HFractalDatabase::HFractalDatabase (std::string path) {
     db_path = path.substr (0, cutoff);
     
     // Try to read the database, failing that write a new one, failing that, error out
-    if (!read()) if (!commit ()) throw new std::runtime_error ("unable to create database");
+    if (!read()) if (!commit ()) {
+        cout << "fuc" << endl;
+        throw new std::runtime_error ("unable to create database");
+    }
 }
 
 HFractalDatabase::HFractalDatabase () {}

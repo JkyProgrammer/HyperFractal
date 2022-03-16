@@ -114,3 +114,34 @@ void crossPlatformDelay(int milliseconds) {
         usleep(milliseconds * 1000);
     #endif
 }
+
+/**
+ * @brief Trim the executable name from the end of the path, returning just the working directory
+ * 
+ * @param path Input path from command line arguments
+ * @return Trimmed path 
+ */
+char* trimExecutableFromPath(char* path) {
+    int str_len = 0;
+    while (true) {
+        if (path[str_len] == '\0') break;
+        str_len++;
+    }
+
+    uint32_t slash_index = -1;
+    for (int i = str_len-1; i >= 0; i--) {
+        if (path[i] == '\\' || path[i] == '/') {
+            slash_index = i;
+            break;
+        }
+    }
+
+    char* result = (char*)malloc(slash_index+2);
+
+    for (int i = 0; i < slash_index+1; i++) {
+        result[i] = path[i];
+    }
+    result[slash_index+1] = '\0';
+
+    return result;
+}

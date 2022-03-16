@@ -47,4 +47,7 @@ std::string equationPreset (EQ_PRESETS, bool);
 // Get information about a colour palette preset
 std::string colourPalettePreset (CP_PRESETS);
 
+// Get the current working directory from the path argument
+char* trimExecutableFromPath (char*);
+
 #endif

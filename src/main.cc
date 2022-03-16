@@ -55,6 +55,7 @@ int main (int argc, char *argv[]) {
         return 1;
     } else {
         // Otherwise, start the GUI
-        return guiMain(argv[0]);
+        cout << trimExecutableFromPath(argv[0]) << endl;
+        return guiMain(trimExecutableFromPath(argv[0]));
     }
 }
