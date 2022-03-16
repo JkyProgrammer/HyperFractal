@@ -6,8 +6,8 @@
 #include "guimain.hh"
 #include "utils.hh"
 
-
 using namespace std;
+
 /**
  * Naming Convention:
  * Classes & Structs - CapitalisedCamelCase
@@ -58,6 +58,3 @@ int main (int argc, char *argv[]) {
         return guiMain(argv[0]);
     }
 }
-
-// TODO: Rewrite pixel distribution
-// TODO: PNG writing
