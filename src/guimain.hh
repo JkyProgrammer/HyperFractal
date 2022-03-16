@@ -4,6 +4,6 @@
 #define GUIMAIN_H
 
 // GUI Main function to isolate the GUI module from the main module to prevent linker conflicts
-int guiMain();
+int guiMain(char*);
 
 #endif

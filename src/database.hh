@@ -49,6 +49,7 @@ private:
     static std::string forCSV (long double); // Generate a string which can be written to a CSV file as a field of a record
 public:
     HFractalDatabase (std::string); // Initialise the database from a given base path
+    HFractalDatabase (); // Dead initialiser for implicit instantiation
 
     std::vector<std::pair<long, std::string>> getConfigDescriptions (); // Generate a list of ID and description pairs for the GUI to display
     HFractalConfigProfile* getConfig (long); // Get a pointer to the config profile with a given ID

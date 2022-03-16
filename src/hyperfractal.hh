@@ -59,7 +59,7 @@ public:
     void setEquation (std::string eq_) { 
         if (!getIsRendering()) { 
             eq = eq_;
-            main_equation = HFractalEquationParser::extract_equation (eq);
+            main_equation = HFractalEquationParser::extractEquation (eq);
             if (main_equation == NULL) return;
             // Detect if the equation matches the blueprint of a preset
             int preset = -1;

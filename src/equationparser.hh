@@ -46,7 +46,7 @@ private:
     static std::vector<Token> epReversePolishConvert (std::vector<IntermediateToken>); // Convert intermediate tokens into a final output postfix notation
 
 public:
-    static HFractalEquation* extract_equation (std::string); // Extract an equation containing postfix tokens from a string input
+    static HFractalEquation* extractEquation (std::string); // Extract an equation containing postfix tokens from a string input
 };
 
 

@@ -75,7 +75,7 @@ p 00 19 0x00222bff    DEFAULT_BACKGROUND_COLOR)";
  * @brief Configure the GUI itself and all class properties
  * 
  */
-void HFractalGui::configureGUI() {
+void HFractalGui::configureGUI(char* path) {
     // Basic class initialisation
     dialog_text = "";
     console_text = "Ready.";
@@ -110,6 +110,9 @@ void HFractalGui::configureGUI() {
     SetWindowMinSize(min_height+CONTROL_MIN_WIDTH, min_height);  
     SetTargetFPS(24);
     configureStyling();
+
+    // Initialise database;
+    database = HFractalDatabase (string(path)+string("FractalSavedStates.csv"));
 
     // Initialise rendering environment
     lowres_hm = new HFractalMain();
@@ -980,9 +983,9 @@ bool HFractalGui::handleKeyPresses() {
  * 
  * @return Integer showing exit status 
  */
-int HFractalGui::guiMain() {
+int HFractalGui::guiMain(char* path) {
     // Run the setup code
-    configureGUI();
+    configureGUI(path);
     parametersWereModified();
     while(!WindowShouldClose()) { // Loop until the application closes
         checkWindowResize();
@@ -1020,8 +1023,8 @@ HFractalGui::HFractalGui() {}
  * 
  * @return Integer showing exit status 
  */
-int guiMain () {
+int guiMain (char* path) {
     HFractalGui gui = HFractalGui ();
-    int res = gui.guiMain();
+    int res = gui.guiMain(path);
     return res;
 }

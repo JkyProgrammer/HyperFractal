@@ -107,12 +107,12 @@ private:
     int image_dimension; // Stores the size of the image, used for sizing the window, scaling and rendering images, and positioning elements
     int control_panel_width; // Stores the width of the control panel
     CP_PRESETS selected_palette; // Determines the colour palette in which the GUI is currently displaying the rendered image
-    HFractalDatabase database = HFractalDatabase ("FractalSavedStates.csv"); // Database which manages saved profile states
+    HFractalDatabase database; // Database which manages saved profile states
     long selected_profile_id; // Records the ID of the profile currently selected in the load render state dialog
     int database_load_dialog_scroll; // Records the current amount of scroll in the load render state dialog
 
     void configureStyling(); // Configures the GUI styling from a stylesheet provided by raylib's creator as part of the library
-    void configureGUI(); // Configures the GUI and initialises all class variables ready for the first GUI mainloop update
+    void configureGUI(char*); // Configures the GUI and initialises all class variables ready for the first GUI mainloop update
 
     void parametersWereModified(); // Marks the GUI as using an outdated render and triggers a preview render update
     bool updatePreviewRender(); // Rerenders the preview image
@@ -165,7 +165,7 @@ private:
     void databaseLoadScrollDown(); // Scroll down in the load render state dialog
     void databaseLoadScrollUp(); // Scroll up in the load render state dialog
 public:
-    int guiMain(); // Start and run the entire GUI. Blocks on current thread
+    int guiMain(char*); // Start and run the entire GUI. Blocks on current thread
 
     HFractalGui(); // Basic constructor
 };

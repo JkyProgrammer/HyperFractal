@@ -75,10 +75,12 @@ HFractalDatabase::HFractalDatabase (std::string path) {
     // Generate and assign the base path
     int cutoff = path.find(".csv");
     db_path = path.substr (0, cutoff);
-
+    
     // Try to read the database, failing that write a new one, failing that, error out
     if (!read()) if (!commit ()) throw new std::runtime_error ("unable to create database");
 }
+
+HFractalDatabase::HFractalDatabase () {}
 
 /**
  * @brief Get a list of config profile descriptions paired with their IDs. Allows the GUI to easily grab a profile summary without having to fetch all the data one-by-one

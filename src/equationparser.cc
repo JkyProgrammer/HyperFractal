@@ -1,6 +1,5 @@
 // src/equationparser.cc
 
-
 #include "equationparser.hh"
 
 #include <vector>
@@ -413,10 +412,13 @@ vector<Token> HFractalEquationParser::epReversePolishConvert (vector<Intermediat
  * @param sequ String containing a mathematical expression to parse
  * @return Pointer to an HFractalEquation instance representing the input string
  */
-HFractalEquation* HFractalEquationParser::extract_equation (string sequ) {
+HFractalEquation* HFractalEquationParser::extractEquation (string sequ) {
     if (sequ.length() < 1) return NULL;
     string cleaned = epClean (sequ);
-    if (epCheck (cleaned) != SUCCESS) return NULL;
+    EP_CHECK_STATUS check_result = epCheck (cleaned);
+    if (check_result != SUCCESS) {
+        return NULL;
+    }
 
     vector<IntermediateToken> expression = epTokenise (cleaned);
 
