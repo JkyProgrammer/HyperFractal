@@ -51,7 +51,7 @@ int main (int argc, char *argv[]) {
     } else if (argc != 1) {
         // If we have only some arguments, show the user what arguments they need to provide
         cout << "Provide all the correct arguments please:" << endl;
-        cout << "int resolution, long double offset_x, long double offset_y, long double zoom, string HFractalEquation, int worker_threads, int eval_limit" << endl;
+        cout << "int resolution, long double offset_x, long double offset_y, long double zoom, string equation, int worker_threads, int eval_limit" << endl;
         return 1;
     } else {
         // Otherwise, start the GUI
