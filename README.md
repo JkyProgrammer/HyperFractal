@@ -29,7 +29,7 @@ By clicking on the 'Render Image' button in the control panel, the application w
 ### Parameters
 
 Parameters determine the image which is output. These include the following:
-* Zoom - allows you to look closer at particular areas by stretching the mathematical space on both axes - can be altered using the 'Zoom In', 'Reset Zoom', 'Zoom Out' buttons
+* Zoom - allows you to look closer at particular areas by stretching the mathematical space on both axes - can be altered using the 'Zoom In', 'Reset Zoom', 'Zoom Out' buttons, or the '+' and '-' buttons on the keyboard
 * Offset - allows you to move the viewport around the fractal by offsetting the mathematical space on one or more axes - can be altered using the 'up', 'down' 'left', 'right' buttons, or the arrow keys
 * Equation - the iterative mathematical expression which is used to generate values for each pixel - clicking in the equation input box and typing allows you to alter this: **see dedicated help section**
 * Iteration limit - limits the number of times the equation is iterated before the program assumes it does not tend to infinity - can be altered using the '<' and '>' buttons, or using the left and right square bracket keys (accelerate by holding Shift)
