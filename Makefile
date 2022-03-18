@@ -1,7 +1,7 @@
 cc_files := $(wildcard src/*.cc)
 
 CC       = g++
-CC_args  = -std=c++17 -O3 -Wno-enum-compare -Wno-format-security
+CC_args  = -std=c++17 -O3 -Wno-enum-compare -Wno-format-security -static-libgcc -static-libstdc++
 ifeq ($(OS),Windows_NT)
 	raylib_flags = -L lib/WIN/ -lraylib -lopengl32 -lgdi32 -lwinmm
 	output   = HyperFractal.exe
